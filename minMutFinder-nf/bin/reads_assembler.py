@@ -17,7 +17,6 @@
 #
 # Copyright (C) 2024 Respiratory Viruses Unit, Microbiology Department, Vall d’Hebron Hospital Universitari, Vall d’Hebron Institut de Recerca (VHIR), Vall d’Hebron Barcelona Hospital Campus, Passeig Vall d’Hebron 119-129, 08035 Barcelona, Spain
 
-import pandas as pd
 import re
 from cigar_remove import cigar_remove
 
@@ -26,10 +25,9 @@ def reads_assembler(samfile, all_fastas):
     infile = open(samfile, 'r')
     while infile:
         line = infile.readline()
-        df_cigar = pd.DataFrame(columns=['NODE', 'INI', 'END', 'POS', 'CLASS', 'SEQ'])
         if (line == ""):
             break
-        # Create segments df
+        # Create segments
         node, flag = line.split('\t')[0], line.split('\t')[1]
         if (int(flag) == -1):
             isit = 0
@@ -45,6 +43,7 @@ def reads_assembler(samfile, all_fastas):
             cigar = cigar_remove(cigar, startH, new_cig, idx, number_class, H_exists, p)
 
             idx = 0
+            segments = []  # (INI, END, CLASS, SEQ)
             for c in p.finditer(cigar):
                 end, seq_end = int(pos) + int(cigar[idx:c.start()]) - 1, seq_init + int(cigar[idx:c.start()])
                 if (number_class == 0) & (c.group() == "S"):
@@ -56,50 +55,32 @@ def reads_assembler(samfile, all_fastas):
                     if class_del == 1:
                         seq_init, seq_end = (seq_init - count_del), (seq_end - count_del)
                     seq, class_del = sequence[seq_init:seq_end], 0
-                    
-                new_row = [node, pos, end, cigar[idx:c.start()], c.group(), seq]
+
+                segments.append((int(pos), end, c.group(), seq))
                 pos, idx, seq_init = (int(pos) + int(cigar[idx:c.start()])), (c.start() + 1), seq_end
 
-                df_cigar.loc[len(df_cigar)] = new_row
+            # 2. Process the data: remove S and H categories (clipped sequences) and sort by start
+            segments = sorted((s for s in segments if s[2] not in ('S', 'H')), key=lambda s: s[0])
+            startN = segments[0][0]  # Correct the start of the consensus sequence to the first position defined
+            # (L'ajust d'insercions de l'original nomes actuava entre lectures diferents; aqui sempre es una sola lectura)
 
-            # 2. Process the data
-
-            # print("Filtering data...")
-
-            # Remove S and H categories (clipped sequences)
-            df_segments = df_cigar.loc[(df_cigar['CLASS'] != 'S') & (df_cigar['CLASS'] != 'H'), ]
-            df_segments = df_segments.sort_values('INI')
-            startN = df_segments['INI'].iloc[0]  # Correct the start of the consensus sequence to the first position defined
-            df_segments['INI'], df_segments['END'] = (df_segments['INI'] - startN), (df_segments['END'] - startN)
-
-            for f in range(0, len(df_segments)):
-                if df_segments['CLASS'].iloc[f] == "I":
-                    for r in range(f + 1, len(df_segments)):
-                        if df_segments['NODE'].iloc[r] == df_segments['NODE'].iloc[f]:
-                            continue
-                        else:
-                            df_segments['INI'].iloc[r] = df_segments['INI'].iloc[r] + int(df_segments['POS'].iloc[f])
-                            df_segments['END'].iloc[r] = df_segments['END'].iloc[r] + int(df_segments['POS'].iloc[f])
-
-            # 3. Generate consensus sequence
-            df_consensus = pd.DataFrame(columns=['POS', 'NT'])
-
-            for i in range(0, len(df_segments)):
-                for j in range(df_segments['INI'].iloc[i], df_segments['END'].iloc[i] + 1):
-                    if 0 <= j - df_segments['INI'].iloc[i] < len(df_segments['SEQ'].iloc[i]):
-                        new_row_c = [j, df_segments['SEQ'].iloc[i][j - df_segments['INI'].iloc[i]]]
-                        df_consensus.loc[len(df_consensus)] = new_row_c
+            # 3. Generate consensus sequence (la primera base per posicio guanya, com el drop_duplicates original)
+            consensus, first, last = {}, None, None
+            for ini, end, cls, seq in segments:
+                ini, end = ini - startN, end - startN
+                for j in range(ini, end + 1):
+                    k = j - ini
+                    if 0 <= k < len(seq):
+                        if first is None:
+                            first = j
+                        last = j
+                        consensus.setdefault(j, seq[k])
 
             # Add 'N' in the positions that are not defined.
-            for p in range(df_consensus['POS'].iloc[0], df_consensus['POS'].iloc[-1]):
-                if p not in df_consensus['POS'].tolist():
-                    new_row_c = [p, 'N']
-                    df_consensus.loc[len(df_consensus)] = new_row_c
+            for q in range(first, last):
+                consensus.setdefault(q, 'N')
 
-            df_consensus = df_consensus.drop_duplicates(subset=['POS'])
-            df_consensus = df_consensus.sort_values('POS')
-            consensus_list = df_consensus['NT'].tolist()
-            consensus_seq = ''.join(consensus_list)
+            consensus_seq = ''.join(consensus[q] for q in sorted(consensus))
 
         spaces = "-" * (pos_end - 1)
         ending = "-" * (3 - (len(spaces + consensus_seq) % 3))
