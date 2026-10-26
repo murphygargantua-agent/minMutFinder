@@ -170,7 +170,9 @@ if (params.help || params.h || params.isEmpty() ) {
     	if( !workingdir.mkdirs() ) 	{
     		exit 1, "Cannot create working directory: $workingpath"
     	} 
-    }	
+    }
+    // Convert to absolute path so Nextflow `path` inputs accept it
+    params.out_path = workingdir.getAbsolutePath()
 }
 
 // Header log info

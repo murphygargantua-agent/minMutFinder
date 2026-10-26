@@ -1,22 +1,5 @@
 #!/usr/bin/env python3
 
-# This file is part of minMutFinder.
-#
-# minMutFinder is free software: you can redistribute it and/or modify
-# it under the terms of the GNU General Public License as published by
-# the Free Software Foundation, either version 3 of the License, or
-# (at your option) any later version.
-#
-# minMutFinder is distributed in the hope that it will be useful,
-# but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
-# GNU General Public License for more details.
-#
-# You should have received a copy of the GNU General Public License
-# along with minMutFinder. If not, see <https://www.gnu.org/licenses/>.
-#
-# Copyright (C) 2024 Respiratory Viruses Unit, Microbiology Department, Vall d’Hebron Hospital Universitari, Vall d’Hebron Institut de Recerca (VHIR), Vall d’Hebron Barcelona Hospital Campus, Passeig Vall d’Hebron 119-129, 08035 Barcelona, Spain
-
 import gzip
 import sys
 import os
@@ -27,6 +10,14 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 from Bio import SeqIO
 from read_count import read_count
+
+
+def _open_fastq(path):
+    """Open a FASTQ file, handling both gzipped and plain text."""
+    if path.endswith('.gz'):
+        return gzip.open(path, 'rt')
+    return open(path, 'r')
+
 
 for i in range(len(sys.argv)):
     if sys.argv[i] == '--out-dir':
@@ -56,16 +47,15 @@ PLOTS = out_dir + '/plots'
 ASSEMBLY = out_dir + '/assembly'
 
 
+R1_file, R2_file = SeqIO.parse(_open_fastq(r1), 'fastq'), SeqIO.parse(_open_fastq(r2), 'fastq')
+R1_qc_paired_file = SeqIO.parse(_open_fastq(FQ_R1), 'fastq')
+R2_qc_paired_file = SeqIO.parse(_open_fastq(FQ_R2), 'fastq')
+R1_qc_file = SeqIO.parse(_open_fastq(FQ_R1_UP), 'fastq')
+R2_qc_file = SeqIO.parse(_open_fastq(FQ_R2_UP), 'fastq')
 
-R1_file, R2_file = SeqIO.parse(gzip.open(r1, 'rt'), 'fastq'), SeqIO.parse(gzip.open(r2, 'rt'), 'fastq')
-R1_qc_paired_file = SeqIO.parse(gzip.open(FQ_R1, 'rt'), 'fastq')
-R2_qc_paired_file = SeqIO.parse(gzip.open(FQ_R2, 'rt'), 'fastq')
-R1_qc_file = SeqIO.parse(gzip.open(FQ_R1_UP, 'rt'), 'fastq')
-R2_qc_file = SeqIO.parse(gzip.open(FQ_R2_UP, 'rt'), 'fastq')
-
-reads_total = read_count(R1_file, R2_file)
-reads_filt_qc_unpaired = read_count(R1_qc_file, R2_qc_file)
-reads_filt_qc_paired = read_count(R1_qc_paired_file, R2_qc_paired_file)
+reads_total = read_count(r1, r2)
+reads_filt_qc_unpaired = read_count(FQ_R1_UP, FQ_R2_UP)
+reads_filt_qc_paired = read_count(FQ_R1, FQ_R2)
 reads_filt_qc = int(reads_filt_qc_paired) + int(reads_filt_qc_unpaired)
 
 if os.path.isfile(QC_DIR + '/qc_metrics.csv') is False:
