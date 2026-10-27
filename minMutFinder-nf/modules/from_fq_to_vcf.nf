@@ -47,8 +47,8 @@ process fastqProcessing {
     SAMPLE=\$(basename \${DIR_SAMPLE})
     echo "\${SAMPLE}"
 
-    R1=${params.r1}
-    R2=${params.r2}
+    R1=${r1}
+    R2=${r2}
     cp ${params.ref_seq} "\${ASSEMBLY}/ref_seq.fasta"
     samtools faidx "\${ASSEMBLY}/ref_seq.fasta"
     # Filter by quality
@@ -259,7 +259,7 @@ process reads_qc_plot {
 
     script:
     """
-    python3 $projectDir/bin/read_metrics.py --out-dir ${out_path} --r1 ${params.r1} --r2 ${params.r2} --sample ${out_path.baseName} --r1qc ${fqr1} --r1UPqc ${fqUPr1} --r2qc ${fqr2} --r2UPqc ${fqUPr2}
+    python3 $projectDir/bin/read_metrics.py --out-dir ${out_path} --r1 ${r1} --r2 ${r2} --sample ${out_path.baseName} --r1qc ${fqr1} --r1UPqc ${fqUPr1} --r2qc ${fqr2} --r2UPqc ${fqUPr2}
     """
 }
 

@@ -93,6 +93,25 @@ plot (default is "no") (4)
   3. The annotated mutation file should be tab-separated and contain a column named `mutation` for annotated mutations.
   4. Use "yes" to include synonymous mutations in the output plot, or "no" to exclude them (default).
 
+### Multi-sample
+
+Run multiple samples at once with `run_multi.sh` (reuses the tested single-sample
+pipeline in parallel and merges per-sample results into master tables):
+
+```bash
+./run_multi.sh \
+  --sample_dir <dir_with_one_subdir_per_sample> \
+  --ref_seq <ref.fa> \
+  --annotate <mutations.tsv> \
+  --syn_muts yes \
+  --concurrency 2
+```
+
+Each sample subdirectory should contain a paired FASTQ set
+(`{sample}_R1.fq.gz` + `{sample}_R2.fq.gz`, or `r1.fq`/`r2.fq`).
+Outputs are merged into `all_mutations.csv` and `all_qc_metrics.csv` under
+`--output_dir`.
+
 ---
 
 ## 🔏 License
@@ -146,35 +165,28 @@ We're always happy to help!
 """
 }
 
-/**
-Prints version when asked for
-*/
+workflow {
+    if (params.version || params.v) {
+        versionMessage()
+        exit 0
+    }
 
-if (params.version || params.v) {
-	versionMessage()
-	exit 0
-}
+    if (params.help || params.h || params.isEmpty()) {
+        helpMessage()
+        exit 0
+    }
 
-/**
-Prints help when asked for
-*/
-
-if (params.help || params.h || params.isEmpty() ) {
-	helpMessage()
-	exit 0
-} else {
     //Creates working dir
-    workingpath = params.out_path
-    workingdir = file(workingpath)
+    def workingpath = params.out_path
+    def workingdir = file(workingpath)
     if( !workingdir.exists() ) {
-    	if( !workingdir.mkdirs() ) 	{
-    		exit 1, "Cannot create working directory: $workingpath"
-    	} 
-    }	
-}
+        if( !workingdir.mkdirs() ) {
+            exit 1, "Cannot create working directory: $workingpath"
+        }
+    }
 
-// Header log info
-log.info """---------------------------------------------
+    // Header log info
+    log.info """---------------------------------------------
 MINORITY MUTATION FINDER (minMutFinder)
 ---------------------------------------------
 
@@ -182,39 +194,67 @@ Beginning of analysis:
 
 """
 
-def summary = [:]
+    def summary = [:]
 
-summary['Starting time'] = new java.util.Date() 
-//Environment
-summary['Environment'] = ""
-summary['Pipeline Name'] = 'minMutFinder'
-summary['Pipeline Version'] = workflow.manifest.version
+    summary['Starting time'] = new java.util.Date()
+    //Environment
+    summary['Environment'] = ""
+    summary['Pipeline Name'] = 'minMutFinder'
+    summary['Pipeline Version'] = workflow.manifest.version
 
-workflow {
     println "${params}"
-    out_paths = dirCreator(params.out_path)
+
+    // dirCreator returns 8 paths: out_path, fastq, assembly, references, variant_calling, mutations, plots, qc
+    def out_paths = dirCreator(params.out_path)
+    def (p_out, p_fq, p_asm, p_ref, p_vcf, p_mut, p_plt, p_qc) = out_paths
     refCheck(params.ref_seq)
-    
-    out_fq = fastqProcessing(
-                params.r1,
-                params.r2,
-                params.ref_seq,
-                out_paths
-    )
 
-    reads_qc_plot(params.r1,params.r2,out_paths, out_fq)
-    out_map = mapping1(out_paths, out_fq)
+    // fastqProcessing outputs: ref_seq.fasta, ref_seq.fasta.fai, qc_R1, qc_R2, qc_R1_unpaired, qc_R2_unpaired
+    def (rfasta, rfasta_fai, qR1, qR2, qR1u, qR2u) = fastqProcessing(
+                params.r1, params.r2, params.ref_seq,
+                p_out, p_fq, p_asm, p_ref, p_vcf, p_mut, p_plt, p_qc)
 
-    out_vcf = variant_calling(out_paths, out_map)
-    out_map2 = mapping2(out_paths, out_vcf)
-    out_depth = read_depth(out_paths, out_map2)
-    names = protNames(out_paths, out_vcf)
-    out_muts = byProteinAnalysis(out_paths, params.ref_seq, names.flatten(), out_depth)
-    out_wait = waitForOutMuts(out_paths, out_vcf, out_muts)
+    reads_qc_plot(
+        params.r1, params.r2,
+        p_out, p_fq, p_asm, p_ref, p_vcf, p_mut, p_plt, p_qc,
+        params.ref_seq, rfasta_fai, qR1, qR2, qR1u, qR2u)
+
+    def (map_sam, map_bam) = mapping1(
+        p_out, p_fq, p_asm, p_ref, p_vcf, p_mut, p_plt, p_qc,
+        params.ref_seq, rfasta_fai, qR1, qR2, qR1u, qR2u)
+
+    def (v_bam, v_bam_bai, v_vcf, v_sam, v_samfile,
+         v_vcf_gz, v_vcf_gz_csi, v_af05_vcf, v_af05_vcf_gz, v_af05_vcf_gz_csi, v_af05_fasta) = variant_calling(
+        p_out, p_fq, p_asm, p_ref, p_vcf, p_mut, p_plt, p_qc, map_sam, map_bam)
+
+    def (cons_sam, cons_bam) = mapping2(
+        p_out, p_fq, p_asm, p_ref, p_vcf, p_mut, p_plt, p_qc,
+        v_bam, v_bam_bai, v_vcf, v_sam, v_samfile, v_vcf_gz, v_vcf_gz_csi,
+        v_af05_vcf, v_af05_vcf_gz, v_af05_vcf_gz_csi, v_af05_fasta)
+
+    def depth_tsv = read_depth(
+        p_out, p_fq, p_asm, p_ref, p_vcf, p_mut, p_plt, p_qc, map_sam, map_bam)
+
+    def prot_names = protNames(
+        p_out, p_fq, p_asm, p_ref, p_vcf, p_mut, p_plt, p_qc,
+        v_bam, v_bam_bai, v_vcf, v_sam, v_samfile, v_vcf_gz, v_vcf_gz_csi,
+        v_af05_vcf, v_af05_vcf_gz, v_af05_vcf_gz_csi, v_af05_fasta)
+
+    def (mut_csv, per_qc, per_depth) = byProteinAnalysis(
+        p_out, p_fq, p_asm, p_ref, p_vcf, p_mut, p_plt, p_qc,
+        params.ref_seq, prot_names, depth_tsv)
+
+    def final_muts = waitForOutMuts(
+        p_out, p_fq, p_asm, p_ref, p_vcf, p_mut, p_plt, p_qc,
+        v_bam, v_bam_bai, v_vcf, v_sam, v_samfile, v_vcf_gz, v_vcf_gz_csi,
+        v_af05_vcf, v_af05_vcf_gz, v_af05_vcf_gz_csi, v_af05_fasta,
+        mut_csv, per_qc, per_depth)
+
     if ( params.annotate ){
-        annotateAndViz(out_paths, params.ref_seq, params.annotate, out_wait, params.syn_muts)
+        annotateAndViz(p_out, p_fq, p_asm, p_ref, p_vcf, p_mut, p_plt, p_qc,
+                       params.ref_seq, params.annotate, final_muts, params.syn_muts)
     } else {
-        vizNoAnnot(out_paths, params.ref_seq, out_wait, params.syn_muts)
+        vizNoAnnot(p_out, p_fq, p_asm, p_ref, p_vcf, p_mut, p_plt, p_qc,
+                   params.ref_seq, final_muts, params.syn_muts)
     }
-
 }
