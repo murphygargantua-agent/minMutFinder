@@ -84,6 +84,44 @@ pip install pandas>=2.1.4 Bio>=1.5.9 plotly>=5.18.0 numpy>=1.26.2 pysam>=0.21.0 
 nextflow run minMutFinder.nf --ref_seq <reference.fasta> --out_path <output_name> --r1 <forward_reads.fastq.gz> --r2 <reverse_reads.fastq.gz> --annotate <mutations.tsv> --syn_muts <"yes"/"no">
 ```
 
+### Multi-sample
+
+Run multiple samples at once with `run_multi.sh`, which reuses the tested
+single-sample pipeline in parallel (concurrency-limited) and merges per-sample
+results into master tables:
+
+```bash
+./run_multi.sh \
+  --sample_dir <dir_with_one_subdir_per_sample> \
+  --ref_seq <reference.fasta> \
+  --annotate <mutations.tsv> \
+  --syn_muts yes \
+  --concurrency 2
+```
+
+Each sample subdirectory should contain a paired FASTQ set
+(`{sample}_R1.fq.gz` + `{sample}_R2.fq.gz`, or `r1.fq`/`r2.fq`).
+Per-sample outputs land in `<output_dir>/<sample>/`; merged tables
+`all_mutations.csv` and `all_qc_metrics.csv` are written to `<output_dir>`.
+Per-sample plots remain under each `<output_dir>/<sample>/plots/`.
+
+### Validation status
+
+This multi-sample ability was validated as follows (see `minMutFinder_stub.nf`
+and `nextflow_stub.config` for the validation stub):
+
+- **Wrapper orchestration** (`run_multi.sh`): verified end-to-end with the stub
+  pipeline — per-sample runs execute in parallel (limited by `--concurrency`),
+  per-sample output directories are created with the expected structure, and the
+  merge step correctly produces `all_mutations.csv` and `all_qc_metrics.csv`.
+- **Single-sample pipeline** (`minMutFinder.nf`): the explicit-arg refactor makes
+  the DAG compile and instantiate in Nextflow 26.04.6 (the previous
+  auto-flattening-dependent DAG no longer works in this Nextflow version).
+- The real bioinformatics tools (`minimap2`, `bcftools`, `lofreq`, `trimmomatic`)
+  are **not installed** in this environment (and `lofreq` is bioconda-only), so a
+  full end-to-end run of the real pipeline on real data was not exercised here;
+  the per-sample pipeline logic itself is unchanged from the upstream fork.
+
 ---
 
 ## ⚙️ Arguments
