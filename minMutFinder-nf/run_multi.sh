@@ -42,26 +42,7 @@ dry_run=false
 pipeline=""
 
 while [[ $# -gt 0 ]]; do
-  case "$1" in
-    --sample_dir)  sample_dir="$2"; shift 2 ;;
-    --sample_ids)  sample_ids="$2"; shift 2 ;;
-    --ref_seq)     ref_seq="$2"; shift 2 ;;
-    --annotate)    annotate="$2"; shift 2 ;;
-    --syn_muts)    syn_muts="$2"; shift 2 ;;
-    --output_dir)  output_dir="$2"; shift 2 ;;
-    --work_dir)    work_dir="$2"; shift 2 ;;
-    --concurrency) concurrency="$2"; shift 2 ;;
-    --dry-run)     dry_run=true; shift 1 ;;
-    --config)      CONFIG="$2"; CONFIG_OVERRIDDEN=true; shift 2 ;;
-    --pipeline)    pipeline="$2"; shift 2 ;;
-    -h|--help) usage; exit 0 ;;
-    *) echo "Unknown arg: $1"; usage; exit 1 ;;
-  esac
-done
-
-if [[ -n "$pipeline" ]]; then NF="$pipeline"; fi
-
-usage() {
+  usage() {
   cat <<'EOF'
 Usage: ./run_multi.sh --sample_dir DIR --ref_seq PATH [options]
 
@@ -83,6 +64,26 @@ Options:
   --config         Path to an alternate Nextflow config (default: nextflow_resources.config)
 EOF
 }
+
+
+case "$1" in
+    --sample_dir)  sample_dir="$2"; shift 2 ;;
+    --sample_ids)  sample_ids="$2"; shift 2 ;;
+    --ref_seq)     ref_seq="$2"; shift 2 ;;
+    --annotate)    annotate="$2"; shift 2 ;;
+    --syn_muts)    syn_muts="$2"; shift 2 ;;
+    --output_dir)  output_dir="$2"; shift 2 ;;
+    --work_dir)    work_dir="$2"; shift 2 ;;
+    --concurrency) concurrency="$2"; shift 2 ;;
+    --dry-run)     dry_run=true; shift 1 ;;
+    --config)      CONFIG="$2"; CONFIG_OVERRIDDEN=true; shift 2 ;;
+    --pipeline)    pipeline="$2"; shift 2 ;;
+    -h|--help) usage; exit 0 ;;
+    *) echo "Unknown arg: $1"; usage; exit 1 ;;
+  esac
+done
+
+if [[ -n "$pipeline" ]]; then NF="$pipeline"; fi
 
 [[ -d "$sample_dir" ]] || die "sample_dir does not exist: $sample_dir"
 
