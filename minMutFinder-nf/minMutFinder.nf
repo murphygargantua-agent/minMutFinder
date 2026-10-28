@@ -88,15 +88,18 @@ plot (default is "no") (4)
 
 ### 📝 Notes
 
-  1. The reference genome must contain the coding sequences (CDS) of the proteins. If there are multiple proteins, they should be separated in the FASTA file.
-  2. FASTA headers must use underscores (`_`) between words. For example: `>NC_006273_2_UL96`.
+  1. The reference genome must contain the coding sequences (CDS) of the proteins. If there are multiple proteins, they should be separated in the FASTA file. A pre-built AD169 CMV CDS reference is included at `minMutFinder-nf/resources/cmv_cds.fasta`.
+  2. FASTA headers must use underscores (`_`) between words, or pipes (`|`) if
+     the reference is a multi-CDS GenBank FASTA. For example:
+     `>NC_006273_2_UL96` or `>UL97|NC_006273.2`.
   3. The annotated mutation file should be tab-separated and contain a column named `mutation` for annotated mutations.
   4. Use "yes" to include synonymous mutations in the output plot, or "no" to exclude them (default).
 
 ### Multi-sample
 
-Run multiple samples at once with `run_multi.sh` (reuses the tested single-sample
-pipeline in parallel and merges per-sample results into master tables):
+Run multiple samples at once with `run_multi.sh`, which reuses the tested
+single-sample pipeline in parallel (concurrency-limited) and merges per-sample
+results into master tables:
 
 ```bash
 ./run_multi.sh \
@@ -106,6 +109,9 @@ pipeline in parallel and merges per-sample results into master tables):
   --syn_muts yes \
   --concurrency 2
 ```
+
+`run_multi.sh` accepts `--pipeline <nf_file>`, `--config <config_file>`, and
+`--output_dir <dir>` in addition to the standard arguments.
 
 Each sample subdirectory should contain a paired FASTQ set
 (`{sample}_R1.fq.gz` + `{sample}_R2.fq.gz`, or `r1.fq`/`r2.fq`).
@@ -124,7 +130,8 @@ This project, **minMutFinder**, is licensed under the [GNU General Public Licens
 
 A research paper on **minMutFinder** is currently in progress. In the meantime, please cite this GitHub repository as follows:
 
-> Prats-Méndez I. **minMutFinder**: Minority Mutations Finder. 2024. Available from: https://github.com/ValldHebron-Bioinformatics/minMutFinder
+- **minMutFinder** (fork): https://github.com/murphygargantua-agent/minMutFinder
+  (original by Prats-Méndez I., Vall d'Hebron Hospital Universitari & VHIR).
 
 ---
 
@@ -144,7 +151,7 @@ A research paper on **minMutFinder** is currently in progress. In the meantime, 
 
 If you encounter any issues, have feature requests, or need assistance, feel free to reach out:
 
-- **Open an issue** directly in this repository by clicking [here](https://github.com/ValldHebron-Bioinformatics/minMutFinder/issues).
+- **Open an issue** directly in this repository by clicking [here](https://github.com/murphygargantua-agent/minMutFinder/issues).
 - **Email us** at [ignasi.prats@vhir.org](mailto:ignasi.prats@vhir.org).
 
 We're always happy to help!
