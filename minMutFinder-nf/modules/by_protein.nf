@@ -80,12 +80,12 @@ process byProteinAnalysis {
 
     script:
     """
-    p="${protein.baseName}"
-    prot="\${p/_prot_name/}"
     MUTATIONS=${muts_path}
     SAMPLE=${out_path.baseName}
-    echo -e ""\$prot" is the protein fasta name"
-    python $projectDir/bin/by_protein_analysis.py --out-dir ${out_path} --ref-seq ${params.ref_seq} --sample ${out_path.baseName} --prot "\${prot}"
-    echo \${prot} >> ${muts_path}/stopper
+    while IFS= read -r prot; do
+        echo -e ""\$prot" is the protein fasta name"
+        python $projectDir/bin/by_protein_analysis.py --out-dir ${out_path} --ref-seq ${params.ref_seq} --sample ${out_path.baseName} --prot "\${prot}"
+        echo \${prot} >> ${muts_path}/stopper
+    done < ${assembly_path}/prot_names.txt
     """
 }

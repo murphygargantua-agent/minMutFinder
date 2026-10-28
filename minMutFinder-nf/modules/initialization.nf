@@ -44,12 +44,8 @@ process dirCreator {
     if [[ -d "\${FASTQ}" ]]; then echo -e ""\${FASTQ}" output folder already exists"; else mkdir "\${FASTQ}"; fi
     ASSEMBLY="${out_path}/assembly"
     REF_PATH="${out_path}/assembly/references"
-    if [[ -d "\${ASSEMBLY}" ]]; then 
-        echo -e ""\${ASSEMBLY}" output folder already exists"
-    else 
-        mkdir "\${ASSEMBLY}";
-        mkdir "\${REF_PATH}";
-    fi
+    if [[ -d "\${ASSEMBLY}" ]]; then echo -e ""\${ASSEMBLY}" output folder already exists"; else mkdir "\${ASSEMBLY}"; fi
+    if [[ -d "\${REF_PATH}" ]]; then echo -e ""\${REF_PATH}" output folder already exists"; else mkdir "\${REF_PATH}"; fi
     VARIANT_CALLING="${out_path}/variant_calling"
     if [[ -d "\$VARIANT_CALLING" ]]; then echo -e ""\${VARIANT_CALLING}" output folder already exists"; else mkdir "\${VARIANT_CALLING}"; fi
     MUTATIONS="${out_path}/mutations"

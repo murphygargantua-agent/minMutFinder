@@ -23,17 +23,18 @@ def seq_reader(file):
         while True:
             line = infile.readline()
             if not line:
-                seq = "".join(sequence_array)
-                sequences[header] = seq
+                if header:
+                    seq = "".join(sequence_array)
+                    sequences[header] = seq
                 break
             else:
                 if line.startswith(">"):
                     if header == "":
-                        header = line[1:].rstrip()
+                        header = line[1:].rstrip().split()[0]
                     else:
                         seq = "".join(sequence_array)
                         sequences[header] = seq
-                        header, sequence_array = line[1:].rstrip(), []
+                        header, sequence_array = line[1:].rstrip().split()[0], []
                 else:
                     sequence_array.append(line.rstrip())
     infile.close()
