@@ -60,7 +60,7 @@ os, pandas, sys, csv, gzip, shutil, matplotlib, seaborn, Bio, re, plotly, numpy
 
 ### Step 1: Clone the Repository
 ```bash
-git clone https://github.com/ValldHebron-Bioinformatics/minMutFinder.git
+git clone https://github.com/murphygargantua-agent/minMutFinder.git
 cd minMutFinder
 ```
 
@@ -107,21 +107,30 @@ Per-sample plots remain under each `<output_dir>/<sample>/plots/`.
 
 ### Validation status
 
-This multi-sample ability was validated as follows (see `minMutFinder_stub.nf`
-and `nextflow_stub.config` for the validation stub):
+This multi-CDS pipeline and multi-sample orchestration were validated end-to-end:
+
+- **Multi-CDS processing** (`byProteinAnalysis`): verified with the CMV2 sample
+  (`r1.fq` + `r2.fq`, 2,696 read pairs) against the AD169 CMV GenBank CDS reference
+  (`resources/cmv_cds.fasta`, 8 drug-target CDSs: UL54, UL56, UL89, UL91, UL92,
+  UL93, UL94, UL97). The pipeline processes ALL 8 CDSs, producing per-CDS
+  mutation CSVs, per-CDS QC metrics, and a merged `CMV2_mutations.csv`. Known CMV
+  drug-resistance mutations were detected (e.g., UL54 T885A/A1108T/T1122A at AF=1.0;
+  UL97 T75A/Q126L).
 
 - **Wrapper orchestration** (`run_multi.sh`): verified end-to-end with the stub
   pipeline — per-sample runs execute in parallel (limited by `--concurrency`),
   per-sample output directories are created with the expected structure, and the
   merge step correctly produces `all_mutations.csv` and `all_qc_metrics.csv`.
+
 - **Single-sample pipeline** (`minMutFinder.nf`): the explicit-arg refactor makes
   the DAG compile and instantiate in Nextflow 26.04.6 (the previous
   auto-flattening-dependent DAG no longer works in this Nextflow version).
-- The real bioinformatics tools (`minimap2`, `bcftools`, `lofreq`, `trimmomatic`)
-  are **not installed** in this environment (and `lofreq` is bioconda-only), so a
-  full end-to-end run of the real pipeline on real data was not exercised here;
-  the per-sample pipeline logic itself is unchanged from the upstream fork.
 
+- **Bug fixes**: the `csv.reader(delimiter="\n")` incompatibility with newer
+  Python was replaced with manual tab-splitting; the `samfile_list` loop was fixed
+  to use the pre-split list; the `byProteinAnalysis` process now iterates over all
+  CDSs in `prot_names.txt` via a bash loop (restoring the original upstream per-CDS
+  design).
 ---
 
 ## ⚙️ Arguments
@@ -135,8 +144,10 @@ and `nextflow_stub.config` for the validation stub):
 
 ### 📝 Notes
 
-  1. The reference genome must contain the coding sequences (CDS) of the proteins. If there are multiple proteins, they should be separated in the FASTA file.
-  2. FASTA headers must use underscores (`_`) between words. For example: `>NC_006273_2_UL96`.
+  1. The reference genome must contain the coding sequences (CDS) of the proteins. If there are multiple proteins, they should be separated in the FASTA file. A pre-built AD169 CMV CDS reference is included at `minMutFinder-nf/resources/cmv_cds.fasta`.
+  2. FASTA headers must use underscores (`_`) between words, or pipes (`|`) if
+     the reference is a multi-CDS GenBank FASTA. For example:
+     `>NC_006273_2_UL96` or `>UL97|NC_006273.2`.
   3. The annotated mutation file should be tab-separated and contain a column named `mutation` for annotated mutations.
   4. If FASTA headers share patterns (e.g. H3N2_PA and H3N2_PA_X share H3N2_PA) they must be differentiated (e.g. H3N2_PA_prot, H3N2_PA_X).
 
@@ -144,13 +155,13 @@ and `nextflow_stub.config` for the validation stub):
 
 ## 🔏 License
 
-This project, **minMutFinder**, is licensed under the [GNU General Public License v3.0](https://www.gnu.org/licenses/gpl-3.0.html). You are free to use, modify, and distribute this software under the terms of this license. For more details, refer to the [LICENSE](./LICENSE) file.
+This project, **minMutFinder** (fork), is licensed under the [GNU General Public License v3.0](https://www.gnu.org/licenses/gpl-3.0.html). You are free to use, modify, and distribute this software under the terms of this license. For more details, refer to the [LICENSE](./LICENSE) file.
 
 ---
 
 ## 🖊️ Citing minMutFinder
 
-A research paper on **minMutFinder** is currently in progress. In the meantime, please cite this GitHub repository using the citation provided by GitHub. You can find the official citation by clicking the **"Cite this repository"** button at the top of the repository page or [view the citation file directly](./CITATION.cff).
+A research paper on **minMutFinder** is currently in progress. In the meantime, please cite this fork's GitHub repository. The original minMutFinder was developed by Ignasi Prats-Méndez at the Respiratory Viruses Unit, Vall d'Hebron Hospital Universitari & VHIR; this fork adds multi-CDS support and multi-sample orchestration.
 
 ---
 
@@ -178,7 +189,7 @@ A research paper on **minMutFinder** is currently in progress. In the meantime, 
 
 If you encounter any issues, have feature requests, or need assistance, feel free to reach out:
 
-- **Open an issue** directly in this repository by clicking [here](https://github.com/ValldHebron-Bioinformatics/minMutFinder/issues).
+- **Open an issue** directly in this repository by clicking [here](https://github.com/murphygargantua-agent/minMutFinder/issues).
 - **Email us** at [ignasi.prats@vhir.org](mailto:ignasi.prats@vhir.org).
 
 We're always happy to help!
