@@ -25,6 +25,44 @@
 
 ---
 
+## 🚀 Quickstart
+
+Get a multi-sample run going in three steps:
+
+```bash
+# 1. Clone the fork
+git clone https://github.com/murphygargantua-agent/minMutFinder.git
+cd minMutFinder
+
+# 2. Prepare a sample directory (one subdir per sample, each with paired FASTQs)
+mkdir -p samples/SampleA samples/SampleB
+cp /path/to/SampleA_R1.fq.gz samples/SampleA/
+cp /path/to/SampleA_R2.fq.gz samples/SampleA/
+cp /path/to/SampleB_R1.fq.gz samples/SampleB/
+cp /path/to/SampleB_R2.fq.gz samples/SampleB/
+
+# 3. Run (uses the real pipeline by default; pass --pipeline to use the stub)
+./minMutFinder-nf/run_multi.sh \
+  --sample_dir samples \
+  --ref_seq minMutFinder-nf/resources/cmv_cds.fasta \
+  --annotate mutations.tsv \
+  --syn_muts yes \
+  --concurrency 2
+```
+
+Outputs:
+- `multi_run_output/<sample>/` — per-sample pipeline outputs + plots
+- `multi_run_output/all_mutations.csv` — merged mutations table
+- `multi_run_output/all_qc_metrics.csv` — merged QC table
+
+To smoke-test the orchestration without installing bioinformatics tools, swap in the stub pipeline:
+
+```bash
+./minMutFinder-nf/run_multi.sh \
+  --sample_dir samples --ref_seq minMutFinder-nf/resources/cmv_cds.fasta \
+  --pipeline minMutFinder-nf/minMutFinder_stub.nf --concurrency 2 --dry-run
+```
+
 ## 🔍 Features
 
 - 🧬 **Advanced Mutation Detection**: Identifies minority mutations while accounting for multiple nucleotide changes within a single codon.
