@@ -169,8 +169,16 @@ pass ERE patterns with `--r1_pattern` and `--r2_pattern`:
   --concurrency 4
 ```
 
+Before running, use `--list` to verify which files get detected:
+
+```bash
+./run_multi.sh --sample_dir samples --ref_seq ref.fasta \
+  --r1_pattern '^.+_for\.fq\.gz$' --r2_pattern '^.+_rev\.fq\.gz$' --list
+```
+
 The default `_R1/_R2`, `r1/r2`, and `R1/R2` conventions continue to work without
-any extra arguments.
+any extra arguments. A test suite in `tests/` validates the pairing/merge logic
+without needing the real bioinformatics tools.
 
 ### Validation status
 

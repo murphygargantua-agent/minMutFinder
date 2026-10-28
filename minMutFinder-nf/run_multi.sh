@@ -16,7 +16,8 @@
 #     [--output_dir OUT] \
 #     [--work_dir WORK] \
 #     [--concurrency N] \
-#     [--r1_pattern REGEX] [--r2_pattern REGEX]
+#     [--r1_pattern REGEX] [--r2_pattern REGEX] \
+#     [--dry-run] [--list]
 
 set -euo pipefail
 
@@ -41,6 +42,7 @@ output_dir="${PIPELINE_DIR}/../multi_run_output"
 work_dir="${PIPELINE_DIR}/../multi_run_work"
 concurrency=2
 dry_run=false
+list_only=false
 pipeline=""
 r1_pattern=""
 r2_pattern=""
@@ -68,6 +70,8 @@ Options:
   --config         Path to an alternate Nextflow config (default: nextflow_resources.config)
   --r1_pattern     ERE pattern to match the R1 (forward) FASTQ within each sample dir
   --r2_pattern     ERE pattern to match the R2 (reverse) FASTQ within each sample dir
+  --dry-run        Print the per-sample nextflow commands without executing them
+  --list           Detect and print the paired FASTQ for each sample, then exit
 EOF
 }
 
@@ -86,6 +90,7 @@ case "$1" in
     --pipeline)    pipeline="$2"; shift 2 ;;
     --r1_pattern)  r1_pattern="$2"; shift 2 ;;
     --r2_pattern)  r2_pattern="$2"; shift 2 ;;
+    --list)        list_only=true; shift 1 ;;
     -h|--help) usage; exit 0 ;;
     *) echo "Unknown arg: $1"; usage; exit 1 ;;
   esac
@@ -93,44 +98,10 @@ done
 
 if [[ -n "$pipeline" ]]; then NF="$pipeline"; fi
 
-[[ -d "$sample_dir" ]] || die "sample_dir does not exist: $sample_dir"
-
-# Resolve to absolute paths (pipeline requires absolute --out_path)
-sample_dir="$(cd "$sample_dir" && pwd)"
-output_dir="$(mkdir -p "$output_dir" && cd "$output_dir" && pwd)"
-work_dir="$(mkdir -p "$work_dir" && cd "$work_dir" && pwd)"
-ref_seq="$(cd "$(dirname "$ref_seq")" && pwd)/$(basename "$ref_seq")"
-annotate_abs=""
-if [[ -n "$annotate" ]]; then
-  annotate_abs="$(cd "$(dirname "$annotate")" && pwd)/$(basename "$annotate")"
-fi
-
-# Build sample list
-declare -a samples=()
-if [[ -n "$sample_ids" ]]; then
-  IFS=',' read -ra samples <<< "$sample_ids"
-else
-  for d in "$sample_dir"/*/; do
-    [[ -d "$d" ]] || continue
-    samples+=("$(basename "$d")")
-  done
-fi
-[[ ${#samples[@]} -gt 0 ]] || die "no samples found in $sample_dir"
-
-echo "=== run_multi.sh: ${#samples[@]} sample(s), concurrency=$concurrency ==="
-echo "  sample_dir=$sample_dir  output_dir=$output_dir  work_dir=$work_dir"
-if [[ "$dry_run" == true ]]; then
-  echo "[DRY RUN] Would run the following per-sample pipelines:"
-  for s in "${samples[@]}"; do
-    echo "  nextflow -w '$work_dir/$s' run '$NF' -c '$CONFIG' \\"
-    echo "    --ref_seq '$ref_seq' --r1 <pair> --r2 <pair> --out_path '$output_dir/$s' --syn_muts '$syn_muts' ${annotate:+--annotate '$annotate_abs'}"
-  done
-  exit 0
-fi
-
 # Find a paired FASTQ (R1/R2) inside a sample directory.
 # Supports: {stem}_R1.fq(.gz) / {stem}_R2.fq(.gz), r1.fq/r2.fq, R1.fq/R2.fq,
 # or custom ERE patterns via --r1_pattern/--r2_pattern.
+# (Defined here so --list can use it before the run phase.)
 find_pair() {
   local sdir="$1" r1="" r2="" stem=""
   if [[ -n "$r1_pattern" && -n "$r2_pattern" ]]; then
@@ -169,6 +140,52 @@ find_pair() {
   fi
   printf '%s %s' "$r1" "$r2"
 }
+
+[[ -d "$sample_dir" ]] || die "sample_dir does not exist: $sample_dir"
+
+# Resolve to absolute paths (pipeline requires absolute --out_path)
+sample_dir="$(cd "$sample_dir" && pwd)"
+output_dir="$(mkdir -p "$output_dir" && cd "$output_dir" && pwd)"
+work_dir="$(mkdir -p "$work_dir" && cd "$work_dir" && pwd)"
+ref_seq="$(cd "$(dirname "$ref_seq")" && pwd)/$(basename "$ref_seq")"
+annotate_abs=""
+if [[ -n "$annotate" ]]; then
+  annotate_abs="$(cd "$(dirname "$annotate")" && pwd)/$(basename "$annotate")"
+fi
+
+# Build sample list
+declare -a samples=()
+if [[ -n "$sample_ids" ]]; then
+  IFS=',' read -ra samples <<< "$sample_ids"
+else
+  for d in "$sample_dir"/*/; do
+    [[ -d "$d" ]] || continue
+    samples+=("$(basename "$d")")
+  done
+fi
+[[ ${#samples[@]} -gt 0 ]] || die "no samples found in $sample_dir"
+
+if [[ "$list_only" == true ]]; then
+  echo "=== Detected FASTQ pairs per sample ==="
+  for s in "${samples[@]}"; do
+    pair=$(find_pair "$sample_dir/$s")
+    r1=$(echo "$pair" | awk '{print $1}')
+    r2=$(echo "$pair" | awk '{print $2}')
+    echo "  $s: R1='$r1'  R2='$r2'"
+  done
+  exit 0
+fi
+
+echo "=== run_multi.sh: ${#samples[@]} sample(s), concurrency=$concurrency ==="
+echo "  sample_dir=$sample_dir  output_dir=$output_dir  work_dir=$work_dir"
+if [[ "$dry_run" == true ]]; then
+  echo "[DRY RUN] Would run the following per-sample pipelines:"
+  for s in "${samples[@]}"; do
+    echo "  nextflow -w '$work_dir/$s' run '$NF' -c '$CONFIG' \\"
+    echo "    --ref_seq '$ref_seq' --r1 <pair> --r2 <pair> --out_path '$output_dir/$s' --syn_muts '$syn_muts' ${annotate:+--annotate '$annotate_abs'}"
+  done
+  exit 0
+fi
 
 run_sample() {
   local sample="$1"
