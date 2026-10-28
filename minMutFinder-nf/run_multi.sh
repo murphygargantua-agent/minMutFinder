@@ -15,7 +15,9 @@
 #     [--syn_muts yes|no] \
 #     [--output_dir OUT] \
 #     [--work_dir WORK] \
-#     [--concurrency N]
+#     [--concurrency N] \
+#     [--r1_pattern REGEX] [--r2_pattern REGEX]
+
 set -euo pipefail
 
 PIPELINE_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -40,6 +42,8 @@ work_dir="${PIPELINE_DIR}/../multi_run_work"
 concurrency=2
 dry_run=false
 pipeline=""
+r1_pattern=""
+r2_pattern=""
 
 while [[ $# -gt 0 ]]; do
   usage() {
@@ -62,6 +66,8 @@ Options:
   --concurrency    Max parallel nextflow runs (default 2)
   --pipeline       Path to an alternate Nextflow pipeline (default: minMutFinder.nf)
   --config         Path to an alternate Nextflow config (default: nextflow_resources.config)
+  --r1_pattern     ERE pattern to match the R1 (forward) FASTQ within each sample dir
+  --r2_pattern     ERE pattern to match the R2 (reverse) FASTQ within each sample dir
 EOF
 }
 
@@ -78,6 +84,8 @@ case "$1" in
     --dry-run)     dry_run=true; shift 1 ;;
     --config)      CONFIG="$2"; CONFIG_OVERRIDDEN=true; shift 2 ;;
     --pipeline)    pipeline="$2"; shift 2 ;;
+    --r1_pattern)  r1_pattern="$2"; shift 2 ;;
+    --r2_pattern)  r2_pattern="$2"; shift 2 ;;
     -h|--help) usage; exit 0 ;;
     *) echo "Unknown arg: $1"; usage; exit 1 ;;
   esac
@@ -121,33 +129,43 @@ if [[ "$dry_run" == true ]]; then
 fi
 
 # Find a paired FASTQ (R1/R2) inside a sample directory.
-# Supports: {stem}_R1.fq(.gz) / {stem}_R2.fq(.gz), r1.fq/r2.fq, R1.fq/R2.fq.
+# Supports: {stem}_R1.fq(.gz) / {stem}_R2.fq(.gz), r1.fq/r2.fq, R1.fq/R2.fq,
+# or custom ERE patterns via --r1_pattern/--r2_pattern.
 find_pair() {
   local sdir="$1" r1="" r2="" stem=""
-  # _R1/_R2 convention (stem = prefix before _R1); allow multi-extension like .fq.gz
-  for f in "$sdir"/*; do
-    local base="${f##*/}"
-    if [[ "$base" =~ ^(.+)_R1(\.[a-zA-Z0-9]+)*$ ]]; then
-      stem="${BASH_REMATCH[1]}"
-      r1="$f"
+  if [[ -n "$r1_pattern" && -n "$r2_pattern" ]]; then
+    # Custom regex patterns provided by the user.
+    for f in "$sdir"/*; do
+      local base="${f##*/}"
+      if [[ "$base" =~ $r1_pattern ]]; then r1="$f"; fi
+      if [[ "$base" =~ $r2_pattern ]]; then r2="$f"; fi
+    done
+  else
+    # _R1/_R2 convention (stem = prefix before _R1); allow multi-extension like .fq.gz
+    for f in "$sdir"/*; do
+      local base="${f##*/}"
+      if [[ "$base" =~ ^(.+)_R1(\.[a-zA-Z0-9]+)*$ ]]; then
+        stem="${BASH_REMATCH[1]}"
+        r1="$f"
+      fi
+    done
+    if [[ -n "$r1" ]]; then
+      local esc="${stem//./\\.}"
+      for f in "$sdir"/*; do
+        local base="${f##*/}"
+        if [[ "$base" =~ ^${esc}_R2(\.[a-zA-Z0-9]+)*$ ]]; then r2="$f"; break; fi
+      done
     fi
-  done
-  if [[ -n "$r1" ]]; then
-    local esc="${stem//./\\.}"
-    for f in "$sdir"/*; do
-      local base="${f##*/}"
-      if [[ "$base" =~ ^${esc}_R2(\.[a-zA-Z0-9]+)*$ ]]; then r2="$f"; break; fi
-    done
-  fi
-  if [[ -z "$r2" ]]; then
-    # r1/r2 or R1/R2 convention (exact name prefix, case-insensitive)
-    for f in "$sdir"/*; do
-      local base="${f##*/}"
-      case "$base" in
-        r1*|R1*) r1="$f" ;;
-        r2*|R2*) r2="$f" ;;
-      esac
-    done
+    if [[ -z "$r2" ]]; then
+      # r1/r2 or R1/R2 convention (exact name prefix, case-insensitive)
+      for f in "$sdir"/*; do
+        local base="${f##*/}"
+        case "$base" in
+          r1*|R1*) r1="$f" ;;
+          r2*|R2*) r2="$f" ;;
+        esac
+      done
+    fi
   fi
   printf '%s %s' "$r1" "$r2"
 }
@@ -184,7 +202,7 @@ run_sample() {
   return $rc
 }
 export -f run_sample find_pair
-export sample_dir output_dir work_dir NF CONFIG ref_seq syn_muts annotate_abs concurrency
+export sample_dir output_dir work_dir NF CONFIG ref_seq syn_muts annotate_abs concurrency r1_pattern r2_pattern
 
 # Run samples in parallel, limited to --concurrency.
 printf '%s\0' "${samples[@]}" | xargs -0 -P "$concurrency" -I {} bash -c 'run_sample "$@"' _ {}

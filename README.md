@@ -154,6 +154,24 @@ Per-sample outputs land in `<output_dir>/<sample>/`; merged tables
 `all_mutations.csv` and `all_qc_metrics.csv` are written to `<output_dir>`.
 Per-sample plots remain under each `<output_dir>/<sample>/plots/`.
 
+### Custom FASTQ naming
+
+If your files use a different convention (e.g. `_for`/`_rev`, `L001_R1`/`L001_R2`),
+pass ERE patterns with `--r1_pattern` and `--r2_pattern`:
+
+```bash
+./run_multi.sh \
+  --sample_dir samples \
+  --ref_seq ref.fasta \
+  --annotate mutations.tsv \
+  --r1_pattern '^.+_for\.fq\.gz$' \
+  --r2_pattern '^.+_rev\.fq\.gz$' \
+  --concurrency 4
+```
+
+The default `_R1/_R2`, `r1/r2`, and `R1/R2` conventions continue to work without
+any extra arguments.
+
 ### Validation status
 
 This multi-CDS pipeline and multi-sample orchestration were validated end-to-end:
