@@ -16,3 +16,5 @@ __pycache__/
 
 # Nextflow logs (no suffix too)
 .nextflow.log
+*.bak
+*.log
