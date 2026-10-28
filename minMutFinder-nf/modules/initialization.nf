@@ -59,13 +59,13 @@ process dirCreator {
 
 process refCheck {
     input:
-    file ref_seq
+    val ref_seq
 
     output:
     stdout
 
     script:
     """
-    python3 $projectDir/bin/ref_check.py --ref-seq "${params.ref_seq}"
+    python3 $projectDir/bin/ref_check.py --ref-seq "${ref_seq}"
     """
 }

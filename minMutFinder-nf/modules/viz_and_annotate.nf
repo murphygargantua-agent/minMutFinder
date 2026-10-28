@@ -73,7 +73,7 @@ process vizNoAnnot {
     path muts_path
     path plots_path
     path qc_path
-    file ref_seq
+    path ref_seq
     file muts
     val syn_muts
 
@@ -82,7 +82,7 @@ process vizNoAnnot {
 
     script:
     """
-    python3 $projectDir/bin/viz_no_annotate.py --out-dir ${out_path} --ref-seq ${params.ref_seq} --prot-names ${assembly_path}/prot_names.txt --syn-muts ${params.syn_muts}
+    python3 $projectDir/bin/viz_no_annotate.py --out-dir ${out_path} --ref-seq ${ref_seq} --prot-names ${assembly_path}/prot_names.txt --syn-muts ${params.syn_muts}
     """
 }
 
@@ -96,7 +96,7 @@ process annotateAndViz {
     path muts_path
     path plots_path
     path qc_path
-    file ref_seq
+    path ref_seq
     file annotate
     file muts
     val syn_muts
@@ -106,6 +106,6 @@ process annotateAndViz {
 
     script:
     """
-    python3 $projectDir/bin/annotate_and_viz.py --out-dir ${out_path} --annotate ${params.annotate} --ref-seq ${params.ref_seq} --prot-names ${assembly_path}/prot_names.txt --syn-muts ${params.syn_muts}
+    python3 $projectDir/bin/annotate_and_viz.py --out-dir ${out_path} --annotate ${annotate} --ref-seq ${ref_seq} --prot-names ${assembly_path}/prot_names.txt --syn-muts ${params.syn_muts}
     """
 }

@@ -84,6 +84,16 @@ pip install pandas>=2.1.4 Bio>=1.5.9 plotly>=5.18.0 numpy>=1.26.2 pysam>=0.21.0 
 nextflow run minMutFinder.nf --ref_seq <reference.fasta> --out_path <output_name> --r1 <forward_reads.fastq.gz> --r2 <reverse_reads.fastq.gz> --annotate <mutations.tsv> --syn_muts <"yes"/"no">
 ```
 
+All path arguments (`--ref_seq`, `--r1`, `--r2`, `--out_path`, `--annotate`) accept
+both relative and absolute paths. Relative paths are resolved against the current
+working directory and converted to absolute internally, so the pipeline can be run
+from any directory.
+
+For example, from the project root:
+```bash
+nextflow run minMutFinder-nf/minMutFinder.nf   --ref_seq minMutFinder-nf/resources/cmv_cds.fasta   --r1 ../cmv_analysis/r1.fq   --r2 ../cmv_analysis/r2.fq   --out_path output/CMV2   --syn_muts yes
+```
+
 ### Multi-sample
 
 Run multiple samples at once with `run_multi.sh`, which reuses the tested
@@ -135,11 +145,11 @@ This multi-CDS pipeline and multi-sample orchestration were validated end-to-end
 
 ## ⚙️ Arguments
 
-- `--ref_seq`: Path and filename of the reference genome FASTA file (1)(2)(4)
-- `--out_path`: Output name for the virus column
-- `--r1`: Path and filename of the forward FASTQ compressed file
-- `--r2`: Path and filename of the reverse FASTQ compressed file
-- `--annotate`: Path and filename of the TSV file containing the annotated mutations (3)
+- `--ref_seq`: Path and filename of the reference genome FASTA file (1)(2)(4). Accepts relative or absolute paths.
+- `--out_path`: Output name for the virus column. Accepts relative or absolute paths.
+- `--r1`: Path and filename of the forward FASTQ compressed file. Accepts relative or absolute paths.
+- `--r2`: Path and filename of the reverse FASTQ compressed file. Accepts relative or absolute paths.
+- `--annotate`: Path and filename of the TSV file containing the annotated mutations (3). Accepts relative or absolute paths.
 - `--syn_muts`: "yes" or "no", depending on whether to include synonymous mutations in the output plot (default is "no")
 
 ### 📝 Notes
