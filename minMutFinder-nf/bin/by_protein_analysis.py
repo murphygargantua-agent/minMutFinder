@@ -66,7 +66,7 @@ FREQ_CUTOFF_FASTA = seq_reader(ASSEMBLY+'/'+SAMPLE+'_prot_variants_AF-'+FREQ_CUT
 VCF_FILE_CUTOFF = VARIANT_CALLING+'/'+SAMPLE+"_prot_variants_AF-"+FREQ_CUTOFF+".vcf"
 
 samfile_df = open(VARIANT_CALLING + '/samfile.sam', 'r')
-samfile_list = list(csv.reader(samfile_df, delimiter = "\n"))
+samfile_list = [line.strip().split('\t') for line in samfile_df if line.strip()]
 samfile_df.close()
 
 # df_muts_ALL = pd.DataFrame(
@@ -187,11 +187,11 @@ if grep(VCF_FILE_CUTOFF, header, 'bool'):
 
     samfile_prot, max_read_len = [], 0
     for list_line in samfile_list:
-        line = list_line[0]
-        if header == line.split('\t')[2]:
-            if max_read_len < len(line.split('\t')[9]):
-                max_read_len = len(line.split('\t')[9])
-            samfile_prot.append(line)
+        if len(list_line) >= 10:
+            if header == list_line[2]:
+                if max_read_len < len(list_line[9]):
+                    max_read_len = len(list_line[9])
+                samfile_prot.append('\t'.join(list_line))
     max_read_aa_len = max_read_len//3
     if (max_read_len % 3) != 0:
         max_read_aa_len += 1
@@ -362,7 +362,7 @@ if grep(VCF_FILE_CUTOFF, header, 'bool'):
                 # take from samfile regioninside rangemax and rangemin
                 # ASSEMBLY_PY
             reads = open(READS_MULTIFASTA, 'r')
-            reads_df = pd.DataFrame(list(csv.reader(reads, delimiter="\n")))
+            reads_df = pd.DataFrame([line.strip() for line in reads if line.strip()])
             reads.close()
 
             just_reads = []

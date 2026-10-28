@@ -1,0 +1,91 @@
+
+// Resource requirements for minMutFinder processes.
+// Values are conservative estimates based on typical CMV Illumina input sizes
+// (~thousands of read pairs, ~235 kb CDS reference). Adjust per your cluster.
+
+process {
+    // default fallback for any process not listed below
+    cpus = 4
+    memory = '4GB'
+    time = '30m'
+
+    withName: 'dirCreator' {
+        cpus = 1
+        memory = '1GB'
+        time = '1m'
+    }
+
+    withName: 'refCheck' {
+        cpus = 1
+        memory = '1GB'
+        time = '1m'
+    }
+
+    withName: 'fastqProcessing' {
+        // Trimmomatic is multithreaded (PE -threads 64 in the script)
+        cpus = 16
+        memory = '16GB'
+        time = '60m'
+    }
+
+    withName: 'mapping1' {
+        cpus = 8
+        memory = '8GB'
+        time = '20m'
+    }
+
+    withName: 'variant_calling' {
+        // LoFreq call-parallel uses --pp-threads 64; VCF is small
+        cpus = 16
+        memory = '16GB'
+        time = '60m'
+    }
+
+    withName: 'mapping2' {
+        cpus = 8
+        memory = '8GB'
+        time = '20m'
+    }
+
+    withName: 'read_depth' {
+        cpus = 4
+        memory = '4GB'
+        time = '20m'
+    }
+
+    withName: 'reads_qc_plot' {
+        cpus = 2
+        memory = '4GB'
+        time = '10m'
+    }
+
+    withName: 'protNames' {
+        cpus = 1
+        memory = '1GB'
+        time = '5m'
+    }
+
+    withName: 'byProteinAnalysis' {
+        cpus = 2
+        memory = '4GB'
+        time = '10m'
+    }
+
+    withName: 'waitForOutMuts' {
+        cpus = 1
+        memory = '1GB'
+        time = '5m'
+    }
+
+    withName: 'vizNoAnnot' {
+        cpus = 2
+        memory = '4GB'
+        time = '10m'
+    }
+
+    withName: 'annotateAndViz' {
+        cpus = 2
+        memory = '4GB'
+        time = '10m'
+    }
+}

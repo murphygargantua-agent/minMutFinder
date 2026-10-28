@@ -19,8 +19,8 @@
 
 process fastqProcessing {
     input:
-    file r1
-    file r2
+    path r1
+    path r2
     file ref_seq
     path out_path
     path fq_path

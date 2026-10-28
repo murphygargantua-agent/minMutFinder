@@ -1,0 +1,1523 @@
+[
+  {
+    "gene": "RL1",
+    "start": 1366,
+    "end": 2299,
+    "cdna_start": 1367,
+    "cdna_end": 2299,
+    "strand": 1,
+    "length": 933
+  },
+  {
+    "gene": "RL5A",
+    "start": 5388,
+    "end": 5676,
+    "cdna_start": 5389,
+    "cdna_end": 5676,
+    "strand": -1,
+    "length": 288
+  },
+  {
+    "gene": "RL6",
+    "start": 6024,
+    "end": 6360,
+    "cdna_start": 6025,
+    "cdna_end": 6360,
+    "strand": -1,
+    "length": 336
+  },
+  {
+    "gene": "RL8A",
+    "start": 7911,
+    "end": 8184,
+    "cdna_start": 7912,
+    "cdna_end": 8184,
+    "strand": -1,
+    "length": 273
+  },
+  {
+    "gene": "RL9A",
+    "start": 8249,
+    "end": 8393,
+    "cdna_start": 8250,
+    "cdna_end": 8393,
+    "strand": -1,
+    "length": 144
+  },
+  {
+    "gene": "RL10",
+    "start": 8600,
+    "end": 9113,
+    "cdna_start": 8601,
+    "cdna_end": 9113,
+    "strand": 1,
+    "length": 513
+  },
+  {
+    "gene": "RL11",
+    "start": 9141,
+    "end": 9846,
+    "cdna_start": 9142,
+    "cdna_end": 9846,
+    "strand": 1,
+    "length": 705
+  },
+  {
+    "gene": "RL12",
+    "start": 9849,
+    "end": 11094,
+    "cdna_start": 9850,
+    "cdna_end": 11094,
+    "strand": 1,
+    "length": 1245
+  },
+  {
+    "gene": "RL13",
+    "start": 11188,
+    "end": 12070,
+    "cdna_start": 11189,
+    "cdna_end": 12070,
+    "strand": 1,
+    "length": 882
+  },
+  {
+    "gene": "UL1",
+    "start": 12173,
+    "end": 12830,
+    "cdna_start": 12174,
+    "cdna_end": 12830,
+    "strand": 1,
+    "length": 657
+  },
+  {
+    "gene": "UL2",
+    "start": 13210,
+    "end": 13390,
+    "cdna_start": 13211,
+    "cdna_end": 13390,
+    "strand": -1,
+    "length": 180
+  },
+  {
+    "gene": "UL4",
+    "start": 13820,
+    "end": 14270,
+    "cdna_start": 13821,
+    "cdna_end": 14270,
+    "strand": 1,
+    "length": 450
+  },
+  {
+    "gene": "UL5",
+    "start": 14357,
+    "end": 14858,
+    "cdna_start": 14358,
+    "cdna_end": 14858,
+    "strand": 1,
+    "length": 501
+  },
+  {
+    "gene": "UL6",
+    "start": 14964,
+    "end": 15807,
+    "cdna_start": 14965,
+    "cdna_end": 15807,
+    "strand": 1,
+    "length": 843
+  },
+  {
+    "gene": "UL8",
+    "start": 15864,
+    "end": 16941,
+    "cdna_start": 15865,
+    "cdna_end": 16941,
+    "strand": 1,
+    "length": 1077
+  },
+  {
+    "gene": "UL7",
+    "start": 15864,
+    "end": 16533,
+    "cdna_start": 15865,
+    "cdna_end": 16533,
+    "strand": 1,
+    "length": 669
+  },
+  {
+    "gene": "UL9",
+    "start": 16946,
+    "end": 17648,
+    "cdna_start": 16947,
+    "cdna_end": 17648,
+    "strand": 1,
+    "length": 702
+  },
+  {
+    "gene": "UL10",
+    "start": 17775,
+    "end": 18540,
+    "cdna_start": 17776,
+    "cdna_end": 18540,
+    "strand": 1,
+    "length": 765
+  },
+  {
+    "gene": "UL11",
+    "start": 18641,
+    "end": 19460,
+    "cdna_start": 18642,
+    "cdna_end": 19460,
+    "strand": 1,
+    "length": 819
+  },
+  {
+    "gene": "UL13",
+    "start": 19657,
+    "end": 21079,
+    "cdna_start": 19658,
+    "cdna_end": 21079,
+    "strand": 1,
+    "length": 1422
+  },
+  {
+    "gene": "UL14",
+    "start": 21228,
+    "end": 22212,
+    "cdna_start": 21229,
+    "cdna_end": 22212,
+    "strand": 1,
+    "length": 984
+  },
+  {
+    "gene": "UL15A",
+    "start": 22224,
+    "end": 22533,
+    "cdna_start": 22225,
+    "cdna_end": 22533,
+    "strand": 1,
+    "length": 309
+  },
+  {
+    "gene": "UL16",
+    "start": 22753,
+    "end": 23446,
+    "cdna_start": 22754,
+    "cdna_end": 23446,
+    "strand": 1,
+    "length": 693
+  },
+  {
+    "gene": "UL17",
+    "start": 23553,
+    "end": 23868,
+    "cdna_start": 23554,
+    "cdna_end": 23868,
+    "strand": 1,
+    "length": 315
+  },
+  {
+    "gene": "UL18",
+    "start": 23976,
+    "end": 25083,
+    "cdna_start": 23977,
+    "cdna_end": 25083,
+    "strand": 1,
+    "length": 1107
+  },
+  {
+    "gene": "UL19",
+    "start": 25079,
+    "end": 25376,
+    "cdna_start": 25080,
+    "cdna_end": 25376,
+    "strand": 1,
+    "length": 297
+  },
+  {
+    "gene": "UL20",
+    "start": 25639,
+    "end": 26656,
+    "cdna_start": 25640,
+    "cdna_end": 26656,
+    "strand": 1,
+    "length": 1017
+  },
+  {
+    "gene": "UL21A",
+    "start": 26802,
+    "end": 27174,
+    "cdna_start": 26803,
+    "cdna_end": 27174,
+    "strand": -1,
+    "length": 372
+  },
+  {
+    "gene": "UL22A",
+    "start": 27442,
+    "end": 27843,
+    "cdna_start": 27443,
+    "cdna_end": 27843,
+    "strand": 1,
+    "length": 401
+  },
+  {
+    "gene": "UL23",
+    "start": 28207,
+    "end": 29062,
+    "cdna_start": 28208,
+    "cdna_end": 29062,
+    "strand": -1,
+    "length": 855
+  },
+  {
+    "gene": "UL24",
+    "start": 29277,
+    "end": 30354,
+    "cdna_start": 29278,
+    "cdna_end": 30354,
+    "strand": -1,
+    "length": 1077
+  },
+  {
+    "gene": "UL25",
+    "start": 30401,
+    "end": 32372,
+    "cdna_start": 30402,
+    "cdna_end": 32372,
+    "strand": 1,
+    "length": 1971
+  },
+  {
+    "gene": "UL26",
+    "start": 32559,
+    "end": 33126,
+    "cdna_start": 32560,
+    "cdna_end": 33126,
+    "strand": -1,
+    "length": 567
+  },
+  {
+    "gene": "UL27",
+    "start": 33181,
+    "end": 35008,
+    "cdna_start": 33182,
+    "cdna_end": 35008,
+    "strand": -1,
+    "length": 1827
+  },
+  {
+    "gene": "UL29",
+    "start": 35104,
+    "end": 37353,
+    "cdna_start": 35105,
+    "cdna_end": 37353,
+    "strand": -1,
+    "length": 2249
+  },
+  {
+    "gene": "UL30",
+    "start": 37482,
+    "end": 37848,
+    "cdna_start": 37483,
+    "cdna_end": 37848,
+    "strand": -1,
+    "length": 366
+  },
+  {
+    "gene": "UL30A",
+    "start": 37893,
+    "end": 38133,
+    "cdna_start": 37894,
+    "cdna_end": 38133,
+    "strand": -1,
+    "length": 240
+  },
+  {
+    "gene": "UL31",
+    "start": 38326,
+    "end": 40114,
+    "cdna_start": 38327,
+    "cdna_end": 40114,
+    "strand": 1,
+    "length": 1788
+  },
+  {
+    "gene": "UL32",
+    "start": 40194,
+    "end": 43344,
+    "cdna_start": 40195,
+    "cdna_end": 43344,
+    "strand": -1,
+    "length": 3150
+  },
+  {
+    "gene": "UL33",
+    "start": 43414,
+    "end": 44773,
+    "cdna_start": 43415,
+    "cdna_end": 44773,
+    "strand": 1,
+    "length": 1359
+  },
+  {
+    "gene": "UL34",
+    "start": 45140,
+    "end": 46364,
+    "cdna_start": 45141,
+    "cdna_end": 46364,
+    "strand": 1,
+    "length": 1224
+  },
+  {
+    "gene": "UL35",
+    "start": 46442,
+    "end": 48368,
+    "cdna_start": 46443,
+    "cdna_end": 48368,
+    "strand": 1,
+    "length": 1926
+  },
+  {
+    "gene": "UL36",
+    "start": 48594,
+    "end": 50128,
+    "cdna_start": 48595,
+    "cdna_end": 50128,
+    "strand": -1,
+    "length": 1534
+  },
+  {
+    "gene": "UL37",
+    "start": 50261,
+    "end": 53060,
+    "cdna_start": 50262,
+    "cdna_end": 53060,
+    "strand": -1,
+    "length": 2799
+  },
+  {
+    "gene": "UL38",
+    "start": 51481,
+    "end": 52477,
+    "cdna_start": 51482,
+    "cdna_end": 52477,
+    "strand": -1,
+    "length": 996
+  },
+  {
+    "gene": "UL40",
+    "start": 53573,
+    "end": 54239,
+    "cdna_start": 53574,
+    "cdna_end": 54239,
+    "strand": -1,
+    "length": 666
+  },
+  {
+    "gene": "UL41A",
+    "start": 54400,
+    "end": 54637,
+    "cdna_start": 54401,
+    "cdna_end": 54637,
+    "strand": -1,
+    "length": 237
+  },
+  {
+    "gene": "UL42",
+    "start": 54741,
+    "end": 55119,
+    "cdna_start": 54742,
+    "cdna_end": 55119,
+    "strand": -1,
+    "length": 378
+  },
+  {
+    "gene": "UL43",
+    "start": 55182,
+    "end": 56454,
+    "cdna_start": 55183,
+    "cdna_end": 56454,
+    "strand": -1,
+    "length": 1272
+  },
+  {
+    "gene": "UL44",
+    "start": 56500,
+    "end": 57802,
+    "cdna_start": 56501,
+    "cdna_end": 57802,
+    "strand": -1,
+    "length": 1302
+  },
+  {
+    "gene": "UL45",
+    "start": 57942,
+    "end": 60663,
+    "cdna_start": 57943,
+    "cdna_end": 60663,
+    "strand": -1,
+    "length": 2721
+  },
+  {
+    "gene": "UL46",
+    "start": 60805,
+    "end": 61678,
+    "cdna_start": 60806,
+    "cdna_end": 61678,
+    "strand": -1,
+    "length": 873
+  },
+  {
+    "gene": "UL47",
+    "start": 61676,
+    "end": 64628,
+    "cdna_start": 61677,
+    "cdna_end": 64628,
+    "strand": 1,
+    "length": 2952
+  },
+  {
+    "gene": "UL48",
+    "start": 64624,
+    "end": 71350,
+    "cdna_start": 64625,
+    "cdna_end": 71350,
+    "strand": 1,
+    "length": 6726
+  },
+  {
+    "gene": "UL48A",
+    "start": 71468,
+    "end": 71696,
+    "cdna_start": 71469,
+    "cdna_end": 71696,
+    "strand": -1,
+    "length": 228
+  },
+  {
+    "gene": "UL49",
+    "start": 71688,
+    "end": 73401,
+    "cdna_start": 71689,
+    "cdna_end": 73401,
+    "strand": -1,
+    "length": 1713
+  },
+  {
+    "gene": "UL50",
+    "start": 73357,
+    "end": 74554,
+    "cdna_start": 73358,
+    "cdna_end": 74554,
+    "strand": -1,
+    "length": 1197
+  },
+  {
+    "gene": "UL51",
+    "start": 74575,
+    "end": 75049,
+    "cdna_start": 74576,
+    "cdna_end": 75049,
+    "strand": -1,
+    "length": 474
+  },
+  {
+    "gene": "UL52",
+    "start": 75086,
+    "end": 77093,
+    "cdna_start": 75087,
+    "cdna_end": 77093,
+    "strand": 1,
+    "length": 2007
+  },
+  {
+    "gene": "UL53",
+    "start": 77085,
+    "end": 78216,
+    "cdna_start": 77086,
+    "cdna_end": 78216,
+    "strand": 1,
+    "length": 1131
+  },
+  {
+    "gene": "UL54",
+    "start": 78193,
+    "end": 81922,
+    "cdna_start": 78194,
+    "cdna_end": 81922,
+    "strand": -1,
+    "length": 3729
+  },
+  {
+    "gene": "UL55",
+    "start": 82065,
+    "end": 84789,
+    "cdna_start": 82066,
+    "cdna_end": 84789,
+    "strand": -1,
+    "length": 2724
+  },
+  {
+    "gene": "UL56",
+    "start": 84751,
+    "end": 87304,
+    "cdna_start": 84752,
+    "cdna_end": 87304,
+    "strand": -1,
+    "length": 2553
+  },
+  {
+    "gene": "UL57",
+    "start": 87870,
+    "end": 91578,
+    "cdna_start": 87871,
+    "cdna_end": 91578,
+    "strand": -1,
+    "length": 3708
+  },
+  {
+    "gene": "UL69",
+    "start": 99518,
+    "end": 101747,
+    "cdna_start": 99519,
+    "cdna_end": 101747,
+    "strand": -1,
+    "length": 2229
+  },
+  {
+    "gene": "UL70",
+    "start": 101846,
+    "end": 104687,
+    "cdna_start": 101847,
+    "cdna_end": 104687,
+    "strand": -1,
+    "length": 2841
+  },
+  {
+    "gene": "UL71",
+    "start": 104702,
+    "end": 105788,
+    "cdna_start": 104703,
+    "cdna_end": 105788,
+    "strand": 1,
+    "length": 1086
+  },
+  {
+    "gene": "UL72",
+    "start": 105868,
+    "end": 107035,
+    "cdna_start": 105869,
+    "cdna_end": 107035,
+    "strand": -1,
+    "length": 1167
+  },
+  {
+    "gene": "UL73",
+    "start": 107050,
+    "end": 107458,
+    "cdna_start": 107051,
+    "cdna_end": 107458,
+    "strand": 1,
+    "length": 408
+  },
+  {
+    "gene": "UL74",
+    "start": 107429,
+    "end": 108848,
+    "cdna_start": 107430,
+    "cdna_end": 108848,
+    "strand": -1,
+    "length": 1419
+  },
+  {
+    "gene": "UL74A",
+    "start": 108141,
+    "end": 109052,
+    "cdna_start": 108142,
+    "cdna_end": 109052,
+    "strand": 1,
+    "length": 911
+  },
+  {
+    "gene": "UL75",
+    "start": 109223,
+    "end": 111452,
+    "cdna_start": 109224,
+    "cdna_end": 111452,
+    "strand": -1,
+    "length": 2229
+  },
+  {
+    "gene": "UL76",
+    "start": 111646,
+    "end": 112624,
+    "cdna_start": 111647,
+    "cdna_end": 112624,
+    "strand": 1,
+    "length": 978
+  },
+  {
+    "gene": "UL77",
+    "start": 112226,
+    "end": 114137,
+    "cdna_start": 112227,
+    "cdna_end": 114137,
+    "strand": 1,
+    "length": 1911
+  },
+  {
+    "gene": "UL78",
+    "start": 114225,
+    "end": 115521,
+    "cdna_start": 114226,
+    "cdna_end": 115521,
+    "strand": 1,
+    "length": 1296
+  },
+  {
+    "gene": "UL79",
+    "start": 115575,
+    "end": 116463,
+    "cdna_start": 115576,
+    "cdna_end": 116463,
+    "strand": -1,
+    "length": 888
+  },
+  {
+    "gene": "UL80",
+    "start": 116499,
+    "end": 118626,
+    "cdna_start": 116500,
+    "cdna_end": 118626,
+    "strand": 1,
+    "length": 2127
+  },
+  {
+    "gene": "UL80.5",
+    "start": 117504,
+    "end": 118626,
+    "cdna_start": 117505,
+    "cdna_end": 118626,
+    "strand": 1,
+    "length": 1122
+  },
+  {
+    "gene": "UL82",
+    "start": 118787,
+    "end": 120467,
+    "cdna_start": 118788,
+    "cdna_end": 120467,
+    "strand": -1,
+    "length": 1680
+  },
+  {
+    "gene": "UL83",
+    "start": 120655,
+    "end": 122341,
+    "cdna_start": 120656,
+    "cdna_end": 122341,
+    "strand": -1,
+    "length": 1686
+  },
+  {
+    "gene": "UL84",
+    "start": 122612,
+    "end": 124376,
+    "cdna_start": 122613,
+    "cdna_end": 124376,
+    "strand": -1,
+    "length": 1764
+  },
+  {
+    "gene": "UL85",
+    "start": 124407,
+    "end": 125328,
+    "cdna_start": 124408,
+    "cdna_end": 125328,
+    "strand": -1,
+    "length": 921
+  },
+  {
+    "gene": "UL86",
+    "start": 125489,
+    "end": 129602,
+    "cdna_start": 125490,
+    "cdna_end": 129602,
+    "strand": -1,
+    "length": 4113
+  },
+  {
+    "gene": "UL87",
+    "start": 129661,
+    "end": 132487,
+    "cdna_start": 129662,
+    "cdna_end": 132487,
+    "strand": 1,
+    "length": 2826
+  },
+  {
+    "gene": "UL88",
+    "start": 132483,
+    "end": 133773,
+    "cdna_start": 132484,
+    "cdna_end": 133773,
+    "strand": 1,
+    "length": 1290
+  },
+  {
+    "gene": "UL89",
+    "start": 133769,
+    "end": 139697,
+    "cdna_start": 133770,
+    "cdna_end": 139697,
+    "strand": -1,
+    "length": 5928
+  },
+  {
+    "gene": "UL91",
+    "start": 135141,
+    "end": 135477,
+    "cdna_start": 135142,
+    "cdna_end": 135477,
+    "strand": 1,
+    "length": 336
+  },
+  {
+    "gene": "UL92",
+    "start": 135446,
+    "end": 136052,
+    "cdna_start": 135447,
+    "cdna_end": 136052,
+    "strand": 1,
+    "length": 606
+  },
+  {
+    "gene": "UL93",
+    "start": 136017,
+    "end": 137802,
+    "cdna_start": 136018,
+    "cdna_end": 137802,
+    "strand": 1,
+    "length": 1785
+  },
+  {
+    "gene": "UL94",
+    "start": 137659,
+    "end": 138697,
+    "cdna_start": 137660,
+    "cdna_end": 138697,
+    "strand": 1,
+    "length": 1038
+  },
+  {
+    "gene": "UL95",
+    "start": 139695,
+    "end": 141297,
+    "cdna_start": 139696,
+    "cdna_end": 141297,
+    "strand": 1,
+    "length": 1602
+  },
+  {
+    "gene": "UL96",
+    "start": 141293,
+    "end": 141677,
+    "cdna_start": 141294,
+    "cdna_end": 141677,
+    "strand": 1,
+    "length": 384
+  },
+  {
+    "gene": "UL97",
+    "start": 141797,
+    "end": 143921,
+    "cdna_start": 141798,
+    "cdna_end": 143921,
+    "strand": 1,
+    "length": 2124
+  },
+  {
+    "gene": "UL98",
+    "start": 144014,
+    "end": 145769,
+    "cdna_start": 144015,
+    "cdna_end": 145769,
+    "strand": 1,
+    "length": 1755
+  },
+  {
+    "gene": "UL99",
+    "start": 145705,
+    "end": 146278,
+    "cdna_start": 145706,
+    "cdna_end": 146278,
+    "strand": 1,
+    "length": 573
+  },
+  {
+    "gene": "UL100",
+    "start": 146537,
+    "end": 147653,
+    "cdna_start": 146538,
+    "cdna_end": 147653,
+    "strand": -1,
+    "length": 1116
+  },
+  {
+    "gene": "UL102",
+    "start": 147830,
+    "end": 150452,
+    "cdna_start": 147831,
+    "cdna_end": 150452,
+    "strand": 1,
+    "length": 2622
+  },
+  {
+    "gene": "UL103",
+    "start": 150614,
+    "end": 151364,
+    "cdna_start": 150615,
+    "cdna_end": 151364,
+    "strand": -1,
+    "length": 750
+  },
+  {
+    "gene": "UL104",
+    "start": 151311,
+    "end": 153405,
+    "cdna_start": 151312,
+    "cdna_end": 153405,
+    "strand": -1,
+    "length": 2094
+  },
+  {
+    "gene": "UL105",
+    "start": 153232,
+    "end": 156103,
+    "cdna_start": 153233,
+    "cdna_end": 156103,
+    "strand": 1,
+    "length": 2871
+  },
+  {
+    "gene": "UL111A",
+    "start": 161002,
+    "end": 161692,
+    "cdna_start": 161003,
+    "cdna_end": 161692,
+    "strand": 1,
+    "length": 690
+  },
+  {
+    "gene": "UL112",
+    "start": 161916,
+    "end": 164128,
+    "cdna_start": 161917,
+    "cdna_end": 164128,
+    "strand": 1,
+    "length": 2212
+  },
+  {
+    "gene": "UL114",
+    "start": 164297,
+    "end": 165050,
+    "cdna_start": 164298,
+    "cdna_end": 165050,
+    "strand": -1,
+    "length": 753
+  },
+  {
+    "gene": "UL115",
+    "start": 165021,
+    "end": 165858,
+    "cdna_start": 165022,
+    "cdna_end": 165858,
+    "strand": -1,
+    "length": 837
+  },
+  {
+    "gene": "UL116",
+    "start": 165857,
+    "end": 166799,
+    "cdna_start": 165858,
+    "cdna_end": 166799,
+    "strand": -1,
+    "length": 942
+  },
+  {
+    "gene": "UL117",
+    "start": 166795,
+    "end": 168073,
+    "cdna_start": 166796,
+    "cdna_end": 168073,
+    "strand": -1,
+    "length": 1278
+  },
+  {
+    "gene": "UL119",
+    "start": 168185,
+    "end": 169311,
+    "cdna_start": 168186,
+    "cdna_end": 169311,
+    "strand": -1,
+    "length": 1126
+  },
+  {
+    "gene": "UL120",
+    "start": 169365,
+    "end": 169971,
+    "cdna_start": 169366,
+    "cdna_end": 169971,
+    "strand": -1,
+    "length": 606
+  },
+  {
+    "gene": "UL121",
+    "start": 170021,
+    "end": 170564,
+    "cdna_start": 170022,
+    "cdna_end": 170564,
+    "strand": -1,
+    "length": 543
+  },
+  {
+    "gene": "UL122",
+    "start": 170688,
+    "end": 174090,
+    "cdna_start": 170689,
+    "cdna_end": 174090,
+    "strand": -1,
+    "length": 3402
+  },
+  {
+    "gene": "UL123",
+    "start": 172328,
+    "end": 174090,
+    "cdna_start": 172329,
+    "cdna_end": 174090,
+    "strand": -1,
+    "length": 1762
+  },
+  {
+    "gene": "UL124",
+    "start": 174122,
+    "end": 174575,
+    "cdna_start": 174123,
+    "cdna_end": 174575,
+    "strand": 1,
+    "length": 453
+  },
+  {
+    "gene": "UL130",
+    "start": 176983,
+    "end": 177628,
+    "cdna_start": 176984,
+    "cdna_end": 177628,
+    "strand": -1,
+    "length": 645
+  },
+  {
+    "gene": "UL131A",
+    "start": 177648,
+    "end": 178146,
+    "cdna_start": 177649,
+    "cdna_end": 178146,
+    "strand": -1,
+    "length": 498
+  },
+  {
+    "gene": "UL132",
+    "start": 178251,
+    "end": 179064,
+    "cdna_start": 178252,
+    "cdna_end": 179064,
+    "strand": -1,
+    "length": 813
+  },
+  {
+    "gene": "UL148",
+    "start": 179140,
+    "end": 180091,
+    "cdna_start": 179141,
+    "cdna_end": 180091,
+    "strand": -1,
+    "length": 951
+  },
+  {
+    "gene": "UL147A",
+    "start": 180159,
+    "end": 180387,
+    "cdna_start": 180160,
+    "cdna_end": 180387,
+    "strand": -1,
+    "length": 228
+  },
+  {
+    "gene": "UL147",
+    "start": 180389,
+    "end": 180869,
+    "cdna_start": 180390,
+    "cdna_end": 180869,
+    "strand": -1,
+    "length": 480
+  },
+  {
+    "gene": "UL146",
+    "start": 180929,
+    "end": 181292,
+    "cdna_start": 180930,
+    "cdna_end": 181292,
+    "strand": -1,
+    "length": 363
+  },
+  {
+    "gene": "UL145",
+    "start": 181572,
+    "end": 181965,
+    "cdna_start": 181573,
+    "cdna_end": 181965,
+    "strand": -1,
+    "length": 393
+  },
+  {
+    "gene": "UL144",
+    "start": 182205,
+    "end": 182736,
+    "cdna_start": 182206,
+    "cdna_end": 182736,
+    "strand": -1,
+    "length": 531
+  },
+  {
+    "gene": "UL142",
+    "start": 183405,
+    "end": 184323,
+    "cdna_start": 183406,
+    "cdna_end": 184323,
+    "strand": -1,
+    "length": 918
+  },
+  {
+    "gene": "UL141",
+    "start": 184395,
+    "end": 185412,
+    "cdna_start": 184396,
+    "cdna_end": 185412,
+    "strand": -1,
+    "length": 1017
+  },
+  {
+    "gene": "UL140",
+    "start": 185704,
+    "end": 186280,
+    "cdna_start": 185705,
+    "cdna_end": 186280,
+    "strand": -1,
+    "length": 576
+  },
+  {
+    "gene": "UL139",
+    "start": 186461,
+    "end": 186878,
+    "cdna_start": 186462,
+    "cdna_end": 186878,
+    "strand": -1,
+    "length": 417
+  },
+  {
+    "gene": "UL138",
+    "start": 187440,
+    "end": 187950,
+    "cdna_start": 187441,
+    "cdna_end": 187950,
+    "strand": -1,
+    "length": 510
+  },
+  {
+    "gene": "UL136",
+    "start": 188032,
+    "end": 188755,
+    "cdna_start": 188033,
+    "cdna_end": 188755,
+    "strand": -1,
+    "length": 723
+  },
+  {
+    "gene": "UL135",
+    "start": 188845,
+    "end": 189772,
+    "cdna_start": 188846,
+    "cdna_end": 189772,
+    "strand": -1,
+    "length": 927
+  },
+  {
+    "gene": "UL133",
+    "start": 189948,
+    "end": 190722,
+    "cdna_start": 189949,
+    "cdna_end": 190722,
+    "strand": -1,
+    "length": 774
+  },
+  {
+    "gene": "UL148A",
+    "start": 190817,
+    "end": 191060,
+    "cdna_start": 190818,
+    "cdna_end": 191060,
+    "strand": -1,
+    "length": 243
+  },
+  {
+    "gene": "UL148B",
+    "start": 191189,
+    "end": 191432,
+    "cdna_start": 191190,
+    "cdna_end": 191432,
+    "strand": -1,
+    "length": 243
+  },
+  {
+    "gene": "UL148C",
+    "start": 191521,
+    "end": 191755,
+    "cdna_start": 191522,
+    "cdna_end": 191755,
+    "strand": 1,
+    "length": 234
+  },
+  {
+    "gene": "UL148D",
+    "start": 192136,
+    "end": 192325,
+    "cdna_start": 192137,
+    "cdna_end": 192325,
+    "strand": 1,
+    "length": 189
+  },
+  {
+    "gene": "UL150",
+    "start": 192340,
+    "end": 194260,
+    "cdna_start": 192341,
+    "cdna_end": 194260,
+    "strand": -1,
+    "length": 1920
+  },
+  {
+    "gene": "UL150A",
+    "start": 193199,
+    "end": 194126,
+    "cdna_start": 193200,
+    "cdna_end": 194126,
+    "strand": 1,
+    "length": 927
+  },
+  {
+    "gene": "IRS1",
+    "start": 195975,
+    "end": 198519,
+    "cdna_start": 195976,
+    "cdna_end": 198519,
+    "strand": 1,
+    "length": 2544
+  },
+  {
+    "gene": "US1",
+    "start": 198542,
+    "end": 199013,
+    "cdna_start": 198543,
+    "cdna_end": 199013,
+    "strand": -1,
+    "length": 471
+  },
+  {
+    "gene": "US2",
+    "start": 199330,
+    "end": 199930,
+    "cdna_start": 199331,
+    "cdna_end": 199930,
+    "strand": -1,
+    "length": 600
+  },
+  {
+    "gene": "US3",
+    "start": 200344,
+    "end": 200905,
+    "cdna_start": 200345,
+    "cdna_end": 200905,
+    "strand": -1,
+    "length": 561
+  },
+  {
+    "gene": "US6",
+    "start": 201614,
+    "end": 202163,
+    "cdna_start": 201615,
+    "cdna_end": 202163,
+    "strand": -1,
+    "length": 549
+  },
+  {
+    "gene": "US7",
+    "start": 202588,
+    "end": 203266,
+    "cdna_start": 202589,
+    "cdna_end": 203266,
+    "strand": -1,
+    "length": 678
+  },
+  {
+    "gene": "US8",
+    "start": 203468,
+    "end": 204152,
+    "cdna_start": 203469,
+    "cdna_end": 204152,
+    "strand": -1,
+    "length": 684
+  },
+  {
+    "gene": "US9",
+    "start": 204166,
+    "end": 204910,
+    "cdna_start": 204167,
+    "cdna_end": 204910,
+    "strand": -1,
+    "length": 744
+  },
+  {
+    "gene": "US10",
+    "start": 205295,
+    "end": 205853,
+    "cdna_start": 205296,
+    "cdna_end": 205853,
+    "strand": -1,
+    "length": 558
+  },
+  {
+    "gene": "US11",
+    "start": 205928,
+    "end": 206576,
+    "cdna_start": 205929,
+    "cdna_end": 206576,
+    "strand": -1,
+    "length": 648
+  },
+  {
+    "gene": "US12",
+    "start": 206761,
+    "end": 207607,
+    "cdna_start": 206762,
+    "cdna_end": 207607,
+    "strand": -1,
+    "length": 846
+  },
+  {
+    "gene": "US13",
+    "start": 207686,
+    "end": 208472,
+    "cdna_start": 207687,
+    "cdna_end": 208472,
+    "strand": -1,
+    "length": 786
+  },
+  {
+    "gene": "US14",
+    "start": 208540,
+    "end": 209473,
+    "cdna_start": 208541,
+    "cdna_end": 209473,
+    "strand": -1,
+    "length": 933
+  },
+  {
+    "gene": "US15",
+    "start": 209517,
+    "end": 210306,
+    "cdna_start": 209518,
+    "cdna_end": 210306,
+    "strand": -1,
+    "length": 789
+  },
+  {
+    "gene": "US16",
+    "start": 210365,
+    "end": 211295,
+    "cdna_start": 210366,
+    "cdna_end": 211295,
+    "strand": -1,
+    "length": 930
+  },
+  {
+    "gene": "US17",
+    "start": 211439,
+    "end": 212321,
+    "cdna_start": 211440,
+    "cdna_end": 212321,
+    "strand": -1,
+    "length": 882
+  },
+  {
+    "gene": "US18",
+    "start": 212588,
+    "end": 213413,
+    "cdna_start": 212589,
+    "cdna_end": 213413,
+    "strand": -1,
+    "length": 825
+  },
+  {
+    "gene": "US19",
+    "start": 213550,
+    "end": 214273,
+    "cdna_start": 213551,
+    "cdna_end": 214273,
+    "strand": -1,
+    "length": 723
+  },
+  {
+    "gene": "US20",
+    "start": 214319,
+    "end": 215084,
+    "cdna_start": 214320,
+    "cdna_end": 215084,
+    "strand": -1,
+    "length": 765
+  },
+  {
+    "gene": "US21",
+    "start": 215190,
+    "end": 215922,
+    "cdna_start": 215191,
+    "cdna_end": 215922,
+    "strand": -1,
+    "length": 732
+  },
+  {
+    "gene": "US22",
+    "start": 216098,
+    "end": 217829,
+    "cdna_start": 216099,
+    "cdna_end": 217829,
+    "strand": -1,
+    "length": 1731
+  },
+  {
+    "gene": "US23",
+    "start": 217942,
+    "end": 219721,
+    "cdna_start": 217943,
+    "cdna_end": 219721,
+    "strand": -1,
+    "length": 1779
+  },
+  {
+    "gene": "US24",
+    "start": 219816,
+    "end": 221322,
+    "cdna_start": 219817,
+    "cdna_end": 221322,
+    "strand": -1,
+    "length": 1506
+  },
+  {
+    "gene": "US26",
+    "start": 221955,
+    "end": 223767,
+    "cdna_start": 221956,
+    "cdna_end": 223767,
+    "strand": -1,
+    "length": 1812
+  },
+  {
+    "gene": "US27",
+    "start": 224132,
+    "end": 225227,
+    "cdna_start": 224133,
+    "cdna_end": 225227,
+    "strand": 1,
+    "length": 1095
+  },
+  {
+    "gene": "US28",
+    "start": 225434,
+    "end": 226499,
+    "cdna_start": 225435,
+    "cdna_end": 226499,
+    "strand": 1,
+    "length": 1065
+  },
+  {
+    "gene": "US29",
+    "start": 226661,
+    "end": 228050,
+    "cdna_start": 226662,
+    "cdna_end": 228050,
+    "strand": 1,
+    "length": 1389
+  },
+  {
+    "gene": "US30",
+    "start": 227853,
+    "end": 228903,
+    "cdna_start": 227854,
+    "cdna_end": 228903,
+    "strand": 1,
+    "length": 1050
+  },
+  {
+    "gene": "US31",
+    "start": 229017,
+    "end": 229503,
+    "cdna_start": 229018,
+    "cdna_end": 229503,
+    "strand": 1,
+    "length": 486
+  },
+  {
+    "gene": "US32",
+    "start": 229620,
+    "end": 230172,
+    "cdna_start": 229621,
+    "cdna_end": 230172,
+    "strand": 1,
+    "length": 552
+  },
+  {
+    "gene": "US33A",
+    "start": 230373,
+    "end": 230547,
+    "cdna_start": 230374,
+    "cdna_end": 230547,
+    "strand": 1,
+    "length": 174
+  },
+  {
+    "gene": "US34",
+    "start": 230715,
+    "end": 231207,
+    "cdna_start": 230716,
+    "cdna_end": 231207,
+    "strand": 1,
+    "length": 492
+  },
+  {
+    "gene": "US34A",
+    "start": 231200,
+    "end": 231395,
+    "cdna_start": 231201,
+    "cdna_end": 231395,
+    "strand": 1,
+    "length": 195
+  },
+  {
+    "gene": "TRS1",
+    "start": 232392,
+    "end": 234759,
+    "cdna_start": 232393,
+    "cdna_end": 234759,
+    "strand": -1,
+    "length": 2367
+  }
+]
