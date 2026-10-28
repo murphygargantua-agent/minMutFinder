@@ -1,0 +1,42 @@
+#!/usr/bin/env bash
+# mock nextflow — mimics the minMutFinder_stub.nf output structure for tests.
+#
+# When invoked as:
+#   nextflow run <nf> -w <workdir> -c <config> --ref_seq <ref> --r1 <r1> --r2 <r2> --out_path <out> --syn_muts <syn> [--annotate <ann>]
+# it creates the per-sample output dir + merged-result files that run_multi.sh's
+# merge step expects.
+set -euo pipefail
+
+out_path=""
+while [[ $# -gt 0 ]]; do
+  case "$1" in
+    --out_path) out_path="$2"; shift 2 ;;
+    *) shift ;;
+  esac
+done
+
+mkdir -p "$out_path/fastq" "$out_path/assembly" "$out_path/variant_calling" \
+         "$out_path/mutations" "$out_path/plots" "$out_path/qc"
+
+SAMPLE=$(basename "$out_path")
+
+# per-sample mutations file (with header)
+cat > "$out_path/mutations/${SAMPLE}_mutations.csv" <<EOF
+SampleID;Gene;Mutation_type;Aa_change;Type_of_aa_change;Nt_mutation;Mutation_frequency
+${SAMPLE};UL1;missense;A;gain;A;1.0
+${SAMPLE};UL2;synonymous;S;loss;S;0.5
+EOF
+
+# per-sample qc file (with header)
+cat > "$out_path/qc/qc_metrics.csv" <<EOF
+sample;test;score
+${SAMPLE};qc_test;0.99
+EOF
+
+# depth file expected by byProteinAnalysis
+echo -e "ref\tpos\tdepth" > "$out_path/assembly/${SAMPLE}_depth.tsv"
+
+# stopper file so waitForOutMuts merges per-CDS files into the sample file
+touch "$out_path/mutations/stopper"
+
+exit 0
