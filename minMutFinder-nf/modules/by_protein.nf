@@ -50,7 +50,6 @@ process protNames {
     ASSEMBLY=${assembly_path}
     grep -v "#" ${vcf_file} | cut -d\$'\t' -f1 | uniq > ${assembly_path}/prot_names.txt
     grep -v "#" ${vcf_file} | cut -d\$'\t' -f1 | uniq | awk -F "|" '{close(F); ID=\$0; gsub("^>", "", ID); F="'\${ASSEMBLY}/'"ID"_prot_name"} {print >> F}'
-    # grep ">" ${params.ref_seq} | awk -F "|" '/^>/ {close(F); ID=\$0; gsub("^>", "", ID); F="'\${ASSEMBLY}/'"ID"_prot_name"} {print >> F}'
     """
 }
 
@@ -65,7 +64,7 @@ process byProteinAnalysis {
     path muts_path
     path plots_path
     path qc_path
-    file ref_seq
+    path ref_seq
     file protein
     file depth
 
@@ -84,7 +83,7 @@ process byProteinAnalysis {
     SAMPLE=${out_path.baseName}
     while IFS= read -r prot; do
         echo -e ""\$prot" is the protein fasta name"
-        python $projectDir/bin/by_protein_analysis.py --out-dir ${out_path} --ref-seq ${params.ref_seq} --sample ${out_path.baseName} --prot "\${prot}"
+        python $projectDir/bin/by_protein_analysis.py --out-dir ${out_path} --ref-seq ${ref_seq} --sample ${out_path.baseName} --prot "\${prot}"
         echo \${prot} >> ${muts_path}/stopper
     done < ${assembly_path}/prot_names.txt
     """

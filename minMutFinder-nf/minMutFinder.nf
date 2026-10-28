@@ -78,11 +78,11 @@ of your sequences.
 
 ## ⚙️ Arguments
 
-- `--ref_seq`: Path and filename of the reference genome FASTA file (1)(2)
-- `--out_path`: Output name for the virus column
-- `--r1`: Path and filename of the forward FASTQ compressed file
-- `--r2`: Path and filename of the reverse FASTQ compressed file
-- `--annotate`: Path and filename of the TSV file containing the annotated mutations (3)
+- `--ref_seq`: Path and filename of the reference genome FASTA file (1)(2). Accepts relative or absolute paths.
+- `--out_path`: Output name for the virus column. Accepts relative or absolute paths.
+- `--r1`: Path and filename of the forward FASTQ compressed file. Accepts relative or absolute paths.
+- `--r2`: Path and filename of the reverse FASTQ compressed file. Accepts relative or absolute paths.
+- `--annotate`: Path and filename of the TSV file containing the annotated mutations (3). Accepts relative or absolute paths.
 - `--syn_muts`: "yes" or "no", depending on whether to include synonymous mutations in the output 
 plot (default is "no") (4)
 
@@ -211,24 +211,32 @@ Beginning of analysis:
 
     println "${params}"
 
+    // Resolve relative input paths to absolute canonical paths so that
+    // scripts running in isolated work directories can always find the files.
+    def out_path = new File(params.out_path).getCanonicalPath()
+    def ref_seq = new File(params.ref_seq).getCanonicalPath()
+    def annotate = params.annotate ? new File(params.annotate).getCanonicalPath() : null
+    def r1 = params.r1 != null ? new File(params.r1).getCanonicalPath() : null
+    def r2 = params.r2 != null ? new File(params.r2).getCanonicalPath() : null
+
     // dirCreator returns 8 paths: out_path, fastq, assembly, references, variant_calling, mutations, plots, qc
-    def out_paths = dirCreator(params.out_path)
+    def out_paths = dirCreator(out_path)
     def (p_out, p_fq, p_asm, p_ref, p_vcf, p_mut, p_plt, p_qc) = out_paths
-    refCheck(params.ref_seq)
+    refCheck(ref_seq)
 
     // fastqProcessing outputs: ref_seq.fasta, ref_seq.fasta.fai, qc_R1, qc_R2, qc_R1_unpaired, qc_R2_unpaired
     def (rfasta, rfasta_fai, qR1, qR2, qR1u, qR2u) = fastqProcessing(
-                params.r1, params.r2, params.ref_seq,
+                r1, r2, ref_seq,
                 p_out, p_fq, p_asm, p_ref, p_vcf, p_mut, p_plt, p_qc)
 
     reads_qc_plot(
-        params.r1, params.r2,
+        r1, r2,
         p_out, p_fq, p_asm, p_ref, p_vcf, p_mut, p_plt, p_qc,
-        params.ref_seq, rfasta_fai, qR1, qR2, qR1u, qR2u)
+        ref_seq, rfasta_fai, qR1, qR2, qR1u, qR2u)
 
     def (map_sam, map_bam) = mapping1(
         p_out, p_fq, p_asm, p_ref, p_vcf, p_mut, p_plt, p_qc,
-        params.ref_seq, rfasta_fai, qR1, qR2, qR1u, qR2u)
+        ref_seq, rfasta_fai, qR1, qR2, qR1u, qR2u)
 
     def (v_bam, v_bam_bai, v_vcf, v_sam, v_samfile,
          v_vcf_gz, v_vcf_gz_csi, v_af05_vcf, v_af05_vcf_gz, v_af05_vcf_gz_csi, v_af05_fasta) = variant_calling(
@@ -249,7 +257,7 @@ Beginning of analysis:
 
     def (mut_csv, per_qc, per_depth) = byProteinAnalysis(
         p_out, p_fq, p_asm, p_ref, p_vcf, p_mut, p_plt, p_qc,
-        params.ref_seq, prot_names, depth_tsv)
+        ref_seq, prot_names, depth_tsv)
 
     def final_muts = waitForOutMuts(
         p_out, p_fq, p_asm, p_ref, p_vcf, p_mut, p_plt, p_qc,
@@ -257,11 +265,11 @@ Beginning of analysis:
         v_af05_vcf, v_af05_vcf_gz, v_af05_vcf_gz_csi, v_af05_fasta,
         mut_csv, per_qc, per_depth)
 
-    if ( params.annotate ){
+    if ( annotate ){
         annotateAndViz(p_out, p_fq, p_asm, p_ref, p_vcf, p_mut, p_plt, p_qc,
-                       params.ref_seq, params.annotate, final_muts, params.syn_muts)
+                       ref_seq, annotate, final_muts, params.syn_muts)
     } else {
         vizNoAnnot(p_out, p_fq, p_asm, p_ref, p_vcf, p_mut, p_plt, p_qc,
-                   params.ref_seq, final_muts, params.syn_muts)
+                   ref_seq, final_muts, params.syn_muts)
     }
 }

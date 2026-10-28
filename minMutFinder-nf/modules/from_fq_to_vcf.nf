@@ -21,7 +21,7 @@ process fastqProcessing {
     input:
     path r1
     path r2
-    file ref_seq
+    path ref_seq
     path out_path
     path fq_path
     path assembly_path
@@ -49,7 +49,7 @@ process fastqProcessing {
 
     R1=${r1}
     R2=${r2}
-    cp ${params.ref_seq} "\${ASSEMBLY}/ref_seq.fasta"
+    cp ${ref_seq} "\${ASSEMBLY}/ref_seq.fasta"
     samtools faidx "\${ASSEMBLY}/ref_seq.fasta"
     # Filter by quality
     # Filter by Trimmomatic
