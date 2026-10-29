@@ -161,7 +161,7 @@ if grep(VCF_FILE_CUTOFF, header, 'bool'):
             infile.write(SAMPLE+';'+'Q3_'+header+';'+str(depth4prot_corrected.depth.quantile([0.75]).iloc[0])+'\n')
     infile.close()
 
-    qc_metrics_file_df = pd.read_csv(qc_metrics_file, sep=';', header=None)
+    qc_metrics_file_df = pd.read_csv(qc_metrics_file, sep=',', header=None)
     qc_metrics_protein_file = pd.DataFrame(columns=["sample", "test", "score"])
 
     for q in grep(qc_metrics_file_df, header, 'text'):
@@ -175,7 +175,7 @@ if grep(VCF_FILE_CUTOFF, header, 'bool'):
 
     if len(q_df) == len(qc_metrics_protein_file.columns):
         qc_metrics_protein_file.loc[len(qc_metrics_protein_file)] = q_df
-    qc_metrics_protein_file.to_csv(QC_DIR+'/'+header+'_qc_metrics.csv', sep=';', index=False)
+    qc_metrics_protein_file.to_csv(QC_DIR+'/'+header+'_qc_metrics.csv', sep=',', index=False)
 
     print('\nBeggining analyisis for protein '+header+'\n')
     vcf_header = grep(VCF_FILE_CUTOFF, '#C', 'text').replace('\n', '').replace('#', '').split('\t')
@@ -275,7 +275,7 @@ if grep(VCF_FILE_CUTOFF, header, 'bool'):
             )
 
             dfmuts.to_csv(
-                MUTATIONS + '/' + SAMPLE + '_' + header + '_alone_mutations.csv', sep=';', index=False
+                MUTATIONS + '/' + SAMPLE + '_' + header + '_alone_mutations.csv', sep=',', index=False
             )
 
         if indels.size > 0:
@@ -292,7 +292,7 @@ if grep(VCF_FILE_CUTOFF, header, 'bool'):
             print(muts)
 
             muts.to_csv(
-                MUTATIONS + '/' + SAMPLE + '_' + header + '_indel_mutations.csv', sep=';', index=False
+                MUTATIONS + '/' + SAMPLE + '_' + header + '_indel_mutations.csv', sep=',', index=False
             )
 
         if fixed_muts.size > 0:
@@ -314,7 +314,7 @@ if grep(VCF_FILE_CUTOFF, header, 'bool'):
                 ]
             )
 
-            dfmuts.to_csv(MUTATIONS + '/' + SAMPLE + '_' + header + '_fixed_mutations.csv', sep=';', index=False)
+            dfmuts.to_csv(MUTATIONS + '/' + SAMPLE + '_' + header + '_fixed_mutations.csv', sep=',', index=False)
 
         if non_fixed_muts.size > 0:
             min_aa, max_aa = min(non_fixed_muts.AA_POS), max(non_fixed_muts.AA_POS)
@@ -402,6 +402,6 @@ if grep(VCF_FILE_CUTOFF, header, 'bool'):
             #     df_muts_ALL = pd.concat([df_muts_ALL, dfmuts])
             # else:
             #     df_muts_ALL = dfmuts
-            dfmuts.to_csv(MUTATIONS + '/' + SAMPLE + '_' + header + '_not_fixed_mutations.csv', sep=';', index=False)
+            dfmuts.to_csv(MUTATIONS + '/' + SAMPLE + '_' + header + '_not_fixed_mutations.csv', sep=',', index=False)
 
-#df_muts_ALL.to_csv(MUTATIONS + '/' + SAMPLE + '_mutations.csv', sep=';', index=False, header=None)
+#df_muts_ALL.to_csv(MUTATIONS + '/' + SAMPLE + '_mutations.csv', sep=',', index=False, header=None)

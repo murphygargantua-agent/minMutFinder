@@ -338,7 +338,7 @@ done
 echo ""
 echo "=== Merging per-sample results into $output_dir ==="
 
-HEADER="SampleID;Gene;Mutation_type;Aa_change;Type_of_aa_change;Nt_mutation;Mutation_frequency"
+HEADER="SampleID,Gene,Mutation_type,Aa_change,Type_of_aa_change,Nt_mutation,Mutation_frequency"
 echo "$HEADER" > "$output_dir/all_mutations.csv"
 for s in "${samples[@]}"; do
   bname=$(basename "$s")
@@ -348,7 +348,7 @@ for s in "${samples[@]}"; do
   fi
 done
 
-echo "sample;test;score" > "$output_dir/all_qc_metrics.csv"
+echo "sample,test,score" > "$output_dir/all_qc_metrics.csv"
 for s in "${samples[@]}"; do
   bname=$(basename "$s")
   f="$output_dir/$bname/qc/qc_metrics.csv"

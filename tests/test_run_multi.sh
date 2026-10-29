@@ -97,9 +97,9 @@ mkdir -p "$TMP/output"
 assert "merge: all_mutations.csv exists" "1" "$(test -f "$TMP/output/all_mutations.csv" && echo 1 || echo 0)"
 assert "merge: all_qc_metrics.csv exists" "1" "$(test -f "$TMP/output/all_qc_metrics.csv" && echo 1 || echo 0)"
 mutations_header=$(head -1 "$TMP/output/all_mutations.csv")
-assert "merge: mutations header" "SampleID;Gene;Mutation_type;Aa_change;Type_of_aa_change;Nt_mutation;Mutation_frequency" "$mutations_header"
+assert "merge: mutations header" "SampleID,Gene,Mutation_type,Aa_change,Type_of_aa_change,Nt_mutation,Mutation_frequency" "$mutations_header"
 qc_header=$(head -1 "$TMP/output/all_qc_metrics.csv")
-assert "merge: qc header" "sample;test;score" "$qc_header"
+assert "merge: qc header" "sample,test,score" "$qc_header"
 n_rows=$(wc -l < "$TMP/output/all_mutations.csv")
 assert "merge: header + 2 samples rows" "5" "$n_rows"
 

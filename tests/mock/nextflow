@@ -26,15 +26,15 @@ SAMPLE=$(basename "$out_path")
 
 # per-sample mutations file (with header)
 cat > "$out_path/mutations/${SAMPLE}_mutations.csv" <<EOF
-SampleID;Gene;Mutation_type;Aa_change;Type_of_aa_change;Nt_mutation;Mutation_frequency
-${SAMPLE};UL1;missense;A;gain;A;1.0
-${SAMPLE};UL2;synonymous;S;loss;S;0.5
+SampleID,Gene,Mutation_type,Aa_change,Type_of_aa_change,Nt_mutation,Mutation_frequency
+${SAMPLE},UL1,missense,A,gain,A,1.0
+${SAMPLE},UL2,synonymous,S,loss,S,0.5
 EOF
 
 # per-sample qc file (with header)
 cat > "$out_path/qc/qc_metrics.csv" <<EOF
-sample;test;score
-${SAMPLE};qc_test;0.99
+sample,test,score
+${SAMPLE},qc_test,0.99
 EOF
 
 # depth file expected by byProteinAnalysis
