@@ -282,7 +282,9 @@ run_sample_bg() {
     --name "minmutfinder_$sample_name" \
     > "$wdir/${sample_name}.stderr" 2>&1
 
-  echo "  launched pid=$(pgrep -f 'minmutfinder_$sample_name' | head -1)"
+  # Capture the launched PID for later polling.
+  _pid=$(ps -eo pid,args | grep -i "minmutfinder_$sample_name" | grep -v grep | head -1 | awk '{print $1}')
+  echo "  launched pid=$_pid"
   
   # If resuming, clear any previous status marker so we poll the resumed run.
   if [[ "$resume" == true && -f "$status_file" ]]; then
@@ -338,7 +340,7 @@ while "$all_done"; do
       echo "  --- end $bname log ---"
       echo "FAILED" > "$status_file"
       all_rc=1
-    elif pgrep -f "minmutfinder_$bname" >/dev/null 2>&1; then
+    elif ps -eo args | grep -i "minmutfinder_$bname" | grep -v grep >/dev/null 2>&1; then
       : # still running
     else
       # Process exited but no completion marker in log (e.g. mock nextflow exits
