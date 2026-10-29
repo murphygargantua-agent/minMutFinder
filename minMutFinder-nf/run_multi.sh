@@ -37,7 +37,18 @@ die() { echo "ERROR: $*" >&2; exit 1; }
 [[ -f "$NF" ]] || die "pipeline not found: $NF"
 # Use NEXTFLOW_BIN if set (allows tests/override with a fake nextflow).
 NEXTFLOW_BIN="${NEXTFLOW_BIN:-nextflow}"
-command -v "$NEXTFLOW_BIN" >/dev/null 2>&1 || die "nextflow not on PATH; install Nextflow (23.10.1+) or add it to PATH"
+command -v "$NEXTFLOW_BIN" >/dev/null 2>&1 || die "nextflow not on PATH; install Nextflow (26.04.0+) or add it to PATH"
+
+# Check Nextflow version (we require >= 26.04.0).
+_nf_version=$("${NEXTFLOW_BIN}" version 2>/dev/null | grep -oE 'version [0-9]+\.[0-9]+\.[0-9]+' | head -1 | awk '{print $2}') || true
+if [[ -n "$_nf_version" ]]; then
+  _nf_major=$(echo "$_nf_version" | cut -d. -f1)
+  _nf_minor=$(echo "$_nf_version" | cut -d. -f2)
+  if [[ "$_nf_major" -lt 26 ]] || { [[ "$_nf_major" -eq 26 ]] && [[ "$_nf_minor" -lt 4 ]]; }; then
+    echo "WARNING: Nextflow $_nf_version is below the minimum supported version (26.04.0). Some features may not work." >&2
+  fi
+fi
+unset _nf_version _nf_major _nf_minor
 
 sample_dir=
 sample_ids=
@@ -220,7 +231,7 @@ if [[ "$dry_run" == true ]]; then
     bname=$(basename "$s")
     resume_opt=""
     if [[ "$resume" == true ]]; then resume_opt=" --resume"; fi
-    echo "  ${NEXTFLOW_BIN} run -bg$resume_opt '$NF' -c '$CONFIG' \\"
+    echo "  ${NEXTFLOW_BIN} run -bg$resume_opt '$NF' -c '$CONFIG' --log '$work_dir/$bname/$bname.log' \\"
     echo "    --ref_seq '$ref_seq' --r1 <pair> --r2 <pair> --out_path '$output_dir/$bname' --syn_muts '$syn_muts' ${annotate:+--annotate '$annotate_abs'}"
   done
   exit 0
@@ -267,7 +278,7 @@ run_sample_bg() {
     --out_path "$out_path" \
     --syn_muts "$syn_muts" \
     ${annotate:+--annotate "$annotate_abs"} \
-    -log "$log" \
+    --log "$log" \
     --name "minmutfinder_$sample_name" \
     > "$wdir/${sample_name}.stderr" 2>&1
 

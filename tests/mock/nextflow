@@ -10,10 +10,18 @@ set -euo pipefail
 out_path=""
 name=""
 log=""
+
+# Print version if requested
+if [[ "$1" == "version" ]]; then
+  echo "version 26.04.6"
+  exit 0
+fi
+
 while [[ $# -gt 0 ]]; do
-  case "$1" in
+  case $1 in
     --out_path) out_path="$2"; shift 2 ;;
     --name) name="$2"; shift 2 ;;
+    --log) log="$2"; shift 2 ;;
     -log) log="$2"; shift 2 ;;
     *) shift ;;
   esac
