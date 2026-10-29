@@ -126,6 +126,54 @@ mkdir -p "$TMP/routput"
 assert "recursive merge: all_mutations.csv exists" "1" "$(test -f "$TMP/routput/all_mutations.csv" && echo 1 || echo 0)"
 assert "recursive merge: header + 2 samples rows" "5" "$(wc -l < "$TMP/routput/all_mutations.csv")"
 
+# ---- Test 9: run ID prevents clobbering on repeated default runs ----
+# Clean up any pre-existing default output dirs.
+rm -rf "$(dirname "$SCRIPT")/../multi_run_output"* "$(dirname "$SCRIPT")/../multi_run_work"*
+mkdir -p "$TMP/noclobber/S1" "$TMP/noclobber/S2"
+echo "R1" > "$TMP/noclobber/S1/S1_R1.fq"
+echo "R2" > "$TMP/noclobber/S1/S1_R2.fq"
+echo "R1" > "$TMP/noclobber/S2/S2_R1.fq"
+echo "R2" > "$TMP/noclobber/S2/S2_R2.fq"
+# First run.
+"$SCRIPT" --sample_dir "$TMP/noclobber" --ref_seq ref.fasta \
+  --pipeline "$(pwd)/minMutFinder-nf/minMutFinder_stub.nf" --concurrency 2 --poll_interval 1 2>&1 >/dev/null
+first_output=$(ls -d "$(dirname "$SCRIPT")/../multi_run_output"* 2>/dev/null | sort | head -1)
+# Second run must create a DIFFERENT output dir (run ID suffix differs).
+"$SCRIPT" --sample_dir "$TMP/noclobber" --ref_seq ref.fasta \
+  --pipeline "$(pwd)/minMutFinder-nf/minMutFinder_stub.nf" --concurrency 2 --poll_interval 1 2>&1 >/dev/null
+second_output=$(ls -d "$(dirname "$SCRIPT")/../multi_run_output"* 2>/dev/null | sort | tail -1)
+assert "run ID: two separate output dirs created" "1" "$(if [[ "$first_output" != "$second_output" ]]; then echo 1; else echo 0; fi)"
+# Both dirs must exist and contain comma-separated merged CSVs.
+assert "run ID: first run output preserved" "1" "$(test -f "$first_output/all_mutations.csv" && echo 1 || echo 0)"
+assert "run ID: second run output preserved" "1" "$(test -f "$second_output/all_mutations.csv" && echo 1 || echo 0)"
+# Verify both are comma-separated (header + data rows use commas).
+first_header=$(head -1 "$first_output/all_mutations.csv")
+second_header=$(head -1 "$second_output/all_mutations.csv")
+assert "run ID: first run header comma-separated" "SampleID,Gene,Mutation_type,Aa_change,Type_of_aa_change,Nt_mutation,Mutation_frequency" "$first_header"
+assert "run ID: second run header comma-separated" "SampleID,Gene,Mutation_type,Aa_change,Type_of_aa_change,Nt_mutation,Mutation_frequency" "$second_header"
+
+# ---- Test 10: error diagnostics show stderr and log tail on failure ----
+# Create a sample dir with a fake nextflow that exits with an error (no completion marker).
+rm -rf "$TMP/diag"
+mkdir -p "$TMP/diag/S1/mutations" "$TMP/diag/S1/qc" "$TMP/diag/S1/plots"
+echo "R1" > "$TMP/diag/S1/S1_R1.fq"
+echo "R2" > "$TMP/diag/S1/S1_R2.fq"
+# Custom fake nextflow that simulates an early failure (missing tool).
+cat > "$TMP/fake_nextflow" <<'EOF'
+#!/usr/bin/env bash
+# Fake nextflow that simulates an early failure (missing tool).
+echo "ERROR ~ [id] command not found: minimap2" >&2
+echo "Command executed: minimap2 ..."
+echo "Command exit status: 127"
+exit 1
+EOF
+chmod +x "$TMP/fake_nextflow"
+# Point the script's nextflow command to the fake one via NEXTFLOW_BIN.
+diag_out=$(NEXTFLOW_BIN="$TMP/fake_nextflow" "$SCRIPT" --sample_dir "$TMP/diag" --ref_seq ref.fasta \
+  --pipeline "$(pwd)/minMutFinder-nf/minMutFinder_stub.nf" --concurrency 1 --poll_interval 1 2>&1) || true
+assert "diagnostics: stderr shown on failure" "3" "$(echo "$diag_out" | grep -c 'minimap2')"
+assert "diagnostics: log status shown on failure" "1" "$(echo "$diag_out" | grep -c 'log file')"
+
 echo ""
 echo "=== Results: $PASS passed, $FAIL failed ==="
 if [[ $FAIL -gt 0 ]]; then exit 1; fi
