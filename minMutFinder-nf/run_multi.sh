@@ -44,6 +44,12 @@ annotate=
 syn_muts=no
 output_dir="${PIPELINE_DIR}/../multi_run_output"
 work_dir="${PIPELINE_DIR}/../multi_run_work"
+# Track whether defaults were used so we can append a run ID for namespacing.
+default_output=true
+default_work=true
+# Generate a unique run ID so each run's merged outputs are namespaced
+# and don't overwrite previous runs.
+run_id="$(date +%Y%m%d_%H%M%S)_$$"
 concurrency=2
 dry_run=false
 list_only=false
@@ -92,8 +98,8 @@ EOF
     --ref_seq)     ref_seq="$2"; shift 2 ;;
     --annotate)    annotate="$2"; shift 2 ;;
     --syn_muts)    syn_muts="$2"; shift 2 ;;
-    --output_dir)  output_dir="$2"; shift 2 ;;
-    --work_dir)    work_dir="$2"; shift 2 ;;
+    --output_dir)  output_dir="$2"; default_output=false; shift 2 ;;
+    --work_dir)    work_dir="$2"; default_work=false; shift 2 ;;
     --concurrency) concurrency="$2"; shift 2 ;;
     --poll_interval) poll_interval="$2"; shift 2 ;;
     --resume) resume=true; shift 1 ;;
