@@ -15,7 +15,7 @@
 // You should have received a copy of the GNU General Public License
 // along with minMutFinder. If not, see <https://www.gnu.org/licenses/>.
 //
-// Copyright (C) 2024 Respiratory Viruses Unit, Microbiology Department, Vall d’Hebron Hospital Universitari, Vall d’Hebron Institut de Recerca (VHIR), Vall d’Hebron Barcelona Hospital Campus, Passeig Vall d’Hebron 119-129, 08035 Barcelona, Spain
+// Copyright (C) 2024 Respiratory Viruses Unit, Microbiology Department, Vall d'Hebron Hospital Universitari, Vall d'Hebron Institut de Recerca (VHIR), Vall d'Hebron Barcelona Hospital Campus, Passeig Vall d'Hebron 119-129, 08035 Barcelona, Spain
 
 process protNames {
     input:
@@ -48,8 +48,8 @@ process protNames {
     DIR_SAMPLE=${out_path}
     SAMPLE=${out_path.baseName}
     ASSEMBLY=${assembly_path}
-    grep -v "#" ${vcf_file} | cut -d\$'\t' -f1 | uniq > ${assembly_path}/prot_names.txt
-    grep -v "#" ${vcf_file} | cut -d\$'\t' -f1 | uniq | awk -F "|" '{close(F); ID=\$0; gsub("^>", "", ID); F="'\${ASSEMBLY}/'"ID"_prot_name"} {print >> F}'
+    grep -v "#" ${vcf_file} | cut -d\$'\\t' -f1 | uniq > ${assembly_path}/prot_names.txt
+    grep -v "#" ${vcf_file} | cut -d\$'\\t' -f1 | uniq | awk -v ASSEMBLY="${assembly_path}" -F "|" '{close(F); ID=$0; gsub("^>", "", ID); F=ASSEMBLY"/"ID"_prot_name"; print >> F}'
     """
 }
 
@@ -84,7 +84,7 @@ process byProteinAnalysis {
     while IFS= read -r prot; do
         echo -e ""\$prot" is the protein fasta name"
         python $projectDir/bin/by_protein_analysis.py --out-dir ${out_path} --ref-seq ${ref_seq} --sample ${out_path.baseName} --prot "\${prot}"
-        echo \${prot} >> ${muts_path}/stopper
+        echo ${prot} >> ${muts_path}/stopper
     done < ${assembly_path}/prot_names.txt
     """
 }
