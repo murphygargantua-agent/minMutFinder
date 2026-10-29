@@ -17,7 +17,7 @@
 #     [--work_dir WORK] \
 #     [--concurrency N] \
 #     [--r1_pattern REGEX] [--r2_pattern REGEX] \
-#     [--dry-run] [--list]
+#     [--dry-run] [--list] [--recursive]
 
 set -euo pipefail
 
@@ -43,6 +43,7 @@ work_dir="${PIPELINE_DIR}/../multi_run_work"
 concurrency=2
 dry_run=false
 list_only=false
+recursive=false
 pipeline=""
 r1_pattern=""
 r2_pattern=""
@@ -72,6 +73,7 @@ Options:
   --r2_pattern     ERE pattern to match the R2 (reverse) FASTQ within each sample dir
   --dry-run        Print the per-sample nextflow commands without executing them
   --list           Detect and print the paired FASTQ for each sample, then exit
+  --recursive      Search for sample directories recursively (not just one level deep)
 EOF
 }
 
@@ -91,6 +93,7 @@ case "$1" in
     --r1_pattern)  r1_pattern="$2"; shift 2 ;;
     --r2_pattern)  r2_pattern="$2"; shift 2 ;;
     --list)        list_only=true; shift 1 ;;
+    --recursive)   recursive=true; shift 1 ;;
     -h|--help) usage; exit 0 ;;
     *) echo "Unknown arg: $1"; usage; exit 1 ;;
   esac
@@ -153,15 +156,32 @@ if [[ -n "$annotate" ]]; then
   annotate_abs="$(cd "$(dirname "$annotate")" && pwd)/$(basename "$annotate")"
 fi
 
-# Build sample list
+# Build sample list. Each entry is a path relative to sample_dir (e.g. "S1" or
+# "batch1/S1"). The basename is used for output/file naming; the full relative
+# path is used to locate the FASTQs.
 declare -a samples=()
 if [[ -n "$sample_ids" ]]; then
   IFS=',' read -ra samples <<< "$sample_ids"
 else
-  for d in "$sample_dir"/*/; do
-    [[ -d "$d" ]] || continue
-    samples+=("$(basename "$d")")
-  done
+  while IFS= read -r d; do
+    [[ -z "$d" ]] && continue
+    # Store relative path from sample_dir so the --list/run/merge steps can
+    # correctly build "$sample_dir/$s" later.
+    rel="${d#$sample_dir/}"
+    rel="${rel%/}"
+    pair=$(find_pair "$d")
+    r1=$(echo "$pair" | awk '{print $1}')
+    r2=$(echo "$pair" | awk '{print $2}')
+    if [[ -n "$r1" && -n "$r2" && -f "$r1" && -f "$r2" ]]; then
+      samples+=("$rel")
+    fi
+  done < <(
+    if [[ "$recursive" == true ]]; then
+      find "$sample_dir" -mindepth 1 -type d -print0 | sort -z | tr '\0' '\n'
+    else
+      for d in "$sample_dir"/*/; do echo "$d"; done | sort
+    fi
+  )
 fi
 [[ ${#samples[@]} -gt 0 ]] || die "no samples found in $sample_dir"
 
@@ -171,7 +191,7 @@ if [[ "$list_only" == true ]]; then
     pair=$(find_pair "$sample_dir/$s")
     r1=$(echo "$pair" | awk '{print $1}')
     r2=$(echo "$pair" | awk '{print $2}')
-    echo "  $s: R1='$r1'  R2='$r2'"
+    echo "  $(basename "$s"): R1='$r1'  R2='$r2'"
   done
   exit 0
 fi
@@ -181,15 +201,17 @@ echo "  sample_dir=$sample_dir  output_dir=$output_dir  work_dir=$work_dir"
 if [[ "$dry_run" == true ]]; then
   echo "[DRY RUN] Would run the following per-sample pipelines:"
   for s in "${samples[@]}"; do
-    echo "  nextflow -w '$work_dir/$s' run '$NF' -c '$CONFIG' \\"
-    echo "    --ref_seq '$ref_seq' --r1 <pair> --r2 <pair> --out_path '$output_dir/$s' --syn_muts '$syn_muts' ${annotate:+--annotate '$annotate_abs'}"
+    bname=$(basename "$s")
+    echo "  nextflow -w '$work_dir/$bname' run '$NF' -c '$CONFIG' \\"
+    echo "    --ref_seq '$ref_seq' --r1 <pair> --r2 <pair> --out_path '$output_dir/$bname' --syn_muts '$syn_muts' ${annotate:+--annotate '$annotate_abs'}"
   done
   exit 0
 fi
 
 run_sample() {
-  local sample="$1"
-  local sdir="$sample_dir/$sample"
+  local sample_path="$1"   # relative path from sample_dir
+  local sample_name="${sample_path##*/}"  # basename, used for output/file naming
+  local sdir="$sample_dir/$sample_path"
   local pair
   pair=$(find_pair "$sdir")
   local r1 r2
@@ -199,10 +221,10 @@ run_sample() {
     echo "ERROR: no valid paired FASTQ in $sdir (found: '$r1' '$r2')" >&2
     return 1
   fi
-  local out_path="$output_dir/$sample"
-  local wdir="$work_dir/$sample"
+  local out_path="$output_dir/$sample_name"
+  local wdir="$work_dir/$sample_name"
   mkdir -p "$wdir"
-  echo "=== [$(date +%T)] Running sample: $sample ==="
+  echo "=== [$(date +%T)] Running sample: $sample_name ==="
   echo "  R1=$r1  R2=$r2  out=$out_path  work=$wdir"
   nextflow run "$NF" \
     -w "$wdir" \
@@ -213,9 +235,9 @@ run_sample() {
     --out_path "$out_path" \
     --syn_muts "$syn_muts" \
     ${annotate:+--annotate "$annotate_abs"} \
-    2>&1 | tee "$wdir/${sample}.log"
+    2>&1 | tee "$wdir/${sample_name}.log"
   local rc=${PIPESTATUS[0]}
-  echo "=== [$(date +%T)] Sample $sample finished (rc=$rc) ==="
+  echo "=== [$(date +%T)] Sample $sample_name finished (rc=$rc) ==="
   return $rc
 }
 export -f run_sample find_pair
@@ -230,7 +252,8 @@ echo "=== Merging per-sample results into $output_dir ==="
 HEADER="SampleID;Gene;Mutation_type;Aa_change;Type_of_aa_change;Nt_mutation;Mutation_frequency"
 echo "$HEADER" > "$output_dir/all_mutations.csv"
 for s in "${samples[@]}"; do
-  f="$output_dir/$s/mutations/${s}_mutations.csv"
+  bname=$(basename "$s")
+  f="$output_dir/$bname/mutations/${bname}_mutations.csv"
   if [[ -f "$f" ]]; then
     # Each per-sample file already has a header; skip it when concatenating.
     tail -n +2 "$f" >> "$output_dir/all_mutations.csv"
@@ -239,7 +262,8 @@ done
 
 echo "sample;test;score" > "$output_dir/all_qc_metrics.csv"
 for s in "${samples[@]}"; do
-  f="$output_dir/$s/qc/qc_metrics.csv"
+  bname=$(basename "$s")
+  f="$output_dir/$bname/qc/qc_metrics.csv"
   if [[ -f "$f" ]]; then
     tail -n +2 "$f" >> "$output_dir/all_qc_metrics.csv"
   fi
