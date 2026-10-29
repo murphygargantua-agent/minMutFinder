@@ -304,6 +304,9 @@ while "$all_done"; do
       : > "$status_file"
     elif [[ -f "$log" ]] && grep -qi "Execution [fe]ailed\|Execution error\|Error" "$log" 2>/dev/null; then
       echo "  $bname: FAILED"
+      echo "  --- $bname log tail (last 30 lines) ---"
+      tail -n 30 "$log"
+      echo "  --- end $bname log ---"
       echo "FAILED" > "$status_file"
       all_rc=1
     elif pgrep -f "minmutfinder_$bname" >/dev/null 2>&1; then
@@ -316,6 +319,11 @@ while "$all_done"; do
         : > "$status_file"
       else
         echo "  $bname: FAILED (no completion marker)"
+        if [[ -f "$log" ]]; then
+          echo "  --- $bname log tail (last 30 lines) ---"
+          tail -n 30 "$log"
+          echo "  --- end $bname log ---"
+        fi
         echo "FAILED" > "$status_file"
         all_rc=1
       fi
