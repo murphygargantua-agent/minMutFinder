@@ -151,14 +151,14 @@ if grep(VCF_FILE_CUTOFF, header, 'bool'):
     coverage = (len(cons_seq) / len(ref_seq)) * 100
     coverage_clean = str(round(coverage, 2)) + '%'
     with open(qc_metrics_file, 'a') as infile:
-        infile.write(SAMPLE+';'+'length_'+header+';'+str(length_assembly)+'\n')
+        infile.write(SAMPLE+','+'length_'+header+','+str(length_assembly)+'\n')
         if (df_depth_check):
-            infile.write(SAMPLE+';'+'n_percentage_'+header+';'+str(n_percentage_clean)+'\n')
-        infile.write(SAMPLE+';'+'coverage_'+header+';'+str(coverage_clean)+'\n')
+            infile.write(SAMPLE+','+'n_percentage_'+header+','+str(n_percentage_clean)+'\n')
+        infile.write(SAMPLE+','+'coverage_'+header+','+str(coverage_clean)+'\n')
         if (df_depth_check):
-            infile.write(SAMPLE+';'+'median_'+header+';'+str(depth4prot_corrected.depth.quantile([0.5]).iloc[0])+'\n')
-            infile.write(SAMPLE+';'+'Q1_'+header+';'+str(depth4prot_corrected.depth.quantile([0.25]).iloc[0])+'\n')
-            infile.write(SAMPLE+';'+'Q3_'+header+';'+str(depth4prot_corrected.depth.quantile([0.75]).iloc[0])+'\n')
+            infile.write(SAMPLE+','+'median_'+header+','+str(depth4prot_corrected.depth.quantile([0.5]).iloc[0])+'\n')
+            infile.write(SAMPLE+','+'Q1_'+header+','+str(depth4prot_corrected.depth.quantile([0.25]).iloc[0])+'\n')
+            infile.write(SAMPLE+','+'Q3_'+header+','+str(depth4prot_corrected.depth.quantile([0.75]).iloc[0])+'\n')
     infile.close()
 
     qc_metrics_file_df = pd.read_csv(qc_metrics_file, sep=',', header=None)
