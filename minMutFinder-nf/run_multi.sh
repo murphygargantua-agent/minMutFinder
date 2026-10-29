@@ -199,11 +199,16 @@ if [[ "$default_work" == "true" ]]; then
 fi
 unset _work_type
 
-# Change into the work directory so Nextflow's .nextflow history/scratch
-# lands on a local filesystem (network drives don't support file locks).
-if [[ "$default_work" == "true" ]]; then
-  cd "$work_dir" || die "cannot cd into $work_dir"
+# Warn if the current working directory is on a network filesystem.
+# Nextflow creates .nextflow in cwd; network drives don't support the locks it needs.
+_cwd=$(pwd)
+_cwd_type=$(df -T "$_cwd" 2>/dev/null | tail -1 | awk '{print $2}')
+if [[ "$_cwd_type" =~ ^nfs|smb|cifs|gluster|webdav ]]; then
+  echo "WARNING: current working directory is on a network filesystem ($_cwd_type)." >&2
+  echo "  Nextflow creates .nextflow in cwd; network drives don't support file locks." >&2
+  echo "  cd to a local directory and re-run, or set NXF_HOME to a local path." >&2
 fi
+unset _cwd _cwd_type
 
 declare -a samples=()
 if [[ -n "$sample_ids" ]]; then
