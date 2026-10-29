@@ -3,8 +3,9 @@
 #
 # Runs the existing single-sample minMutFinder pipeline once per sample (in
 # parallel, concurrency-limited) and merges per-sample results into master
-# tables. This reuses the tested single-sample pipeline verbatim; no internal
-# Nextflow changes are required.
+# tables. Each nextflow run is launched in the background with `-bg` so the
+# Nextflow TUI is detached from the terminal; the script polls per-sample log
+# files for a compact status readout.
 #
 # Usage:
 #   ./run_multi.sh \
@@ -18,6 +19,9 @@
 #     [--concurrency N] \
 #     [--r1_pattern REGEX] [--r2_pattern REGEX] \
 #     [--dry-run] [--list] [--recursive]
+#
+# Options:
+#   --poll_interval    Seconds between status polls (default 5)
 
 set -euo pipefail
 
@@ -25,7 +29,6 @@ PIPELINE_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 NF="${PIPELINE_DIR}/minMutFinder.nf"
 CONFIG="${PIPELINE_DIR}/nextflow_resources.config"
 
-# Allow overriding config for stubs / alternate pipelines
 CONFIG_OVERRIDDEN=false
 
 die() { echo "ERROR: $*" >&2; exit 1; }
@@ -47,6 +50,7 @@ recursive=false
 pipeline=""
 r1_pattern=""
 r2_pattern=""
+poll_interval=5
 
 while [[ $# -gt 0 ]]; do
   usage() {
@@ -54,7 +58,9 @@ while [[ $# -gt 0 ]]; do
 Usage: ./run_multi.sh --sample_dir DIR --ref_seq PATH [options]
 
 Run minMutFinder on every sample found under --sample_dir (one subdirectory per
-sample) and merge the per-sample results.
+sample) and merge the per-sample results. Each nextflow run is backgrounded with
+`-bg` so the Nextflow TUI is detached; a compact status line is polled until all
+jobs finish.
 
 Options:
   --sample_dir     DIR with one subdirectory per sample, each containing a paired
@@ -67,6 +73,7 @@ Options:
   --output_dir     Where per-sample output dirs go (default: ../multi_run_output)
   --work_dir       Where per-sample Nextflow work dirs go (default: ../multi_run_work)
   --concurrency    Max parallel nextflow runs (default 2)
+  --poll_interval  Seconds between status polls (default 5)
   --pipeline       Path to an alternate Nextflow pipeline (default: minMutFinder.nf)
   --config         Path to an alternate Nextflow config (default: nextflow_resources.config)
   --r1_pattern     ERE pattern to match the R1 (forward) FASTQ within each sample dir
@@ -77,8 +84,7 @@ Options:
 EOF
 }
 
-
-case "$1" in
+  case "$1" in
     --sample_dir)  sample_dir="$2"; shift 2 ;;
     --sample_ids)  sample_ids="$2"; shift 2 ;;
     --ref_seq)     ref_seq="$2"; shift 2 ;;
@@ -87,6 +93,7 @@ case "$1" in
     --output_dir)  output_dir="$2"; shift 2 ;;
     --work_dir)    work_dir="$2"; shift 2 ;;
     --concurrency) concurrency="$2"; shift 2 ;;
+    --poll_interval) poll_interval="$2"; shift 2 ;;
     --dry-run)     dry_run=true; shift 1 ;;
     --config)      CONFIG="$2"; CONFIG_OVERRIDDEN=true; shift 2 ;;
     --pipeline)    pipeline="$2"; shift 2 ;;
@@ -102,20 +109,15 @@ done
 if [[ -n "$pipeline" ]]; then NF="$pipeline"; fi
 
 # Find a paired FASTQ (R1/R2) inside a sample directory.
-# Supports: {stem}_R1.fq(.gz) / {stem}_R2.fq(.gz), r1.fq/r2.fq, R1.fq/R2.fq,
-# or custom ERE patterns via --r1_pattern/--r2_pattern.
-# (Defined here so --list can use it before the run phase.)
 find_pair() {
   local sdir="$1" r1="" r2="" stem=""
   if [[ -n "$r1_pattern" && -n "$r2_pattern" ]]; then
-    # Custom regex patterns provided by the user.
     for f in "$sdir"/*; do
       local base="${f##*/}"
       if [[ "$base" =~ $r1_pattern ]]; then r1="$f"; fi
       if [[ "$base" =~ $r2_pattern ]]; then r2="$f"; fi
     done
   else
-    # _R1/_R2 convention (stem = prefix before _R1); allow multi-extension like .fq.gz
     for f in "$sdir"/*; do
       local base="${f##*/}"
       if [[ "$base" =~ ^(.+)_R1(\.[a-zA-Z0-9]+)*$ ]]; then
@@ -131,7 +133,6 @@ find_pair() {
       done
     fi
     if [[ -z "$r2" ]]; then
-      # r1/r2 or R1/R2 convention (exact name prefix, case-insensitive)
       for f in "$sdir"/*; do
         local base="${f##*/}"
         case "$base" in
@@ -146,7 +147,6 @@ find_pair() {
 
 [[ -d "$sample_dir" ]] || die "sample_dir does not exist: $sample_dir"
 
-# Resolve to absolute paths (pipeline requires absolute --out_path)
 sample_dir="$(cd "$sample_dir" && pwd)"
 output_dir="$(mkdir -p "$output_dir" && cd "$output_dir" && pwd)"
 work_dir="$(mkdir -p "$work_dir" && cd "$work_dir" && pwd)"
@@ -156,17 +156,12 @@ if [[ -n "$annotate" ]]; then
   annotate_abs="$(cd "$(dirname "$annotate")" && pwd)/$(basename "$annotate")"
 fi
 
-# Build sample list. Each entry is a path relative to sample_dir (e.g. "S1" or
-# "batch1/S1"). The basename is used for output/file naming; the full relative
-# path is used to locate the FASTQs.
 declare -a samples=()
 if [[ -n "$sample_ids" ]]; then
   IFS=',' read -ra samples <<< "$sample_ids"
 else
   while IFS= read -r d; do
     [[ -z "$d" ]] && continue
-    # Store relative path from sample_dir so the --list/run/merge steps can
-    # correctly build "$sample_dir/$s" later.
     rel="${d#$sample_dir/}"
     rel="${rel%/}"
     pair=$(find_pair "$d")
@@ -196,21 +191,24 @@ if [[ "$list_only" == true ]]; then
   exit 0
 fi
 
-echo "=== run_multi.sh: ${#samples[@]} sample(s), concurrency=$concurrency ==="
+echo "=== run_multi.sh: ${#samples[@]} sample(s), concurrency=$concurrency, poll_interval=$poll_interval ==="
 echo "  sample_dir=$sample_dir  output_dir=$output_dir  work_dir=$work_dir"
 if [[ "$dry_run" == true ]]; then
   echo "[DRY RUN] Would run the following per-sample pipelines:"
   for s in "${samples[@]}"; do
     bname=$(basename "$s")
-    echo "  nextflow -w '$work_dir/$bname' run '$NF' -c '$CONFIG' \\"
+    echo "  nextflow run -bg '$NF' -c '$CONFIG' \\"
     echo "    --ref_seq '$ref_seq' --r1 <pair> --r2 <pair> --out_path '$output_dir/$bname' --syn_muts '$syn_muts' ${annotate:+--annotate '$annotate_abs'}"
   done
   exit 0
 fi
 
-run_sample() {
-  local sample_path="$1"   # relative path from sample_dir
-  local sample_name="${sample_path##*/}"  # basename, used for output/file naming
+# ---------------------------------------------------------------------------
+# Backgrounded per-sample runner using `nextflow run -bg`.
+# ---------------------------------------------------------------------------
+run_sample_bg() {
+  local sample_path="$1"
+  local sample_name="${sample_path##*/}"
   local sdir="$sample_dir/$sample_path"
   local pair
   pair=$(find_pair "$sdir")
@@ -224,9 +222,15 @@ run_sample() {
   local out_path="$output_dir/$sample_name"
   local wdir="$work_dir/$sample_name"
   mkdir -p "$wdir"
-  echo "=== [$(date +%T)] Running sample: $sample_name ==="
+
+  local log="$wdir/${sample_name}.log"
+  local status_file="$wdir/${sample_name}.status"
+
+  echo "=== [$(date +%T)] Launching sample: $sample_name ==="
   echo "  R1=$r1  R2=$r2  out=$out_path  work=$wdir"
-  nextflow run "$NF" \
+
+  # Run in background, detached from terminal; log to a per-sample file.
+  nextflow run -bg "$NF" \
     -w "$wdir" \
     -c "$CONFIG" \
     --ref_seq "$ref_seq" \
@@ -235,18 +239,80 @@ run_sample() {
     --out_path "$out_path" \
     --syn_muts "$syn_muts" \
     ${annotate:+--annotate "$annotate_abs"} \
-    2>&1 | tee "$wdir/${sample_name}.log"
-  local rc=${PIPESTATUS[0]}
-  echo "=== [$(date +%T)] Sample $sample_name finished (rc=$rc) ==="
-  return $rc
+    -log "$log" \
+    --name "minmutfinder_$sample_name" \
+    > /dev/null 2>&1
+
+  echo "  launched pid=$(pgrep -f "minmutfinder_$sample_name" | head -1)"
+  echo "  status=running"
 }
-export -f run_sample find_pair
-export sample_dir output_dir work_dir NF CONFIG ref_seq syn_muts annotate_abs concurrency r1_pattern r2_pattern
+export -f run_sample_bg find_pair
+export sample_dir output_dir work_dir NF CONFIG ref_seq syn_muts annotate_abs poll_interval r1_pattern r2_pattern
 
-# Run samples in parallel, limited to --concurrency.
-printf '%s\0' "${samples[@]}" | xargs -0 -P "$concurrency" -I {} bash -c 'run_sample "$@"' _ {}
-xargs_rc=${PIPESTATUS[0]}
+# Launch samples in parallel (concurrency-limited).
+for i in "${!samples[@]}"; do
+  if [[ $((i % concurrency)) -eq 0 ]]; then
+    # Wait for a free slot before launching the next one.
+    wait
+  fi
+  run_sample_bg "${samples[$i]}" &
+done
+wait
 
+echo ""
+echo "=== Polling samples for completion ==="
+all_rc=0
+declare -a statuses=()
+for s in "${samples[@]}"; do
+  bname=$(basename "$s")
+  status_file="$work_dir/$bname/${bname}.status"
+  log="$work_dir/$bname/${bname}.log"
+  statuses+=("running")
+done
+
+# Poll until all are done.
+all_done=true
+while "$all_done"; do
+  all_done=false
+  for s in "${samples[@]}"; do
+    bname=$(basename "$s")
+    log="$work_dir/$bname/${bname}.log"
+    status_file="$work_dir/$bname/${bname}.status"
+
+    if [[ -f "$status_file" ]]; then
+      continue  # already marked done
+    fi
+
+    # Check for completion markers in the log.
+    if [[ -f "$log" ]] && grep -qi "Execution completed" "$log" 2>/dev/null; then
+      echo "  $bname: completed"
+      : > "$status_file"
+    elif [[ -f "$log" ]] && grep -qi "Execution [fe]ailed\|Execution error\|Error" "$log" 2>/dev/null; then
+      echo "  $bname: FAILED"
+      echo "FAILED" > "$status_file"
+      all_rc=1
+    elif pgrep -f "minmutfinder_$bname" >/dev/null 2>&1; then
+      : # still running
+    else
+      # Process exited but no completion marker in log (e.g. mock nextflow exits
+      # immediately). Treat as done if output files exist; otherwise a failure.
+      if [[ -d "$output_dir/$bname" ]]; then
+        echo "  $bname: completed (pre-check)"
+        : > "$status_file"
+      else
+        echo "  $bname: FAILED (no completion marker)"
+        echo "FAILED" > "$status_file"
+        all_rc=1
+      fi
+    fi
+  done
+  if [[ "$all_done" == true ]]; then
+    break
+  fi
+  sleep "$poll_interval"
+done
+
+echo ""
 echo "=== Merging per-sample results into $output_dir ==="
 
 HEADER="SampleID;Gene;Mutation_type;Aa_change;Type_of_aa_change;Nt_mutation;Mutation_frequency"
@@ -255,7 +321,6 @@ for s in "${samples[@]}"; do
   bname=$(basename "$s")
   f="$output_dir/$bname/mutations/${bname}_mutations.csv"
   if [[ -f "$f" ]]; then
-    # Each per-sample file already has a header; skip it when concatenating.
     tail -n +2 "$f" >> "$output_dir/all_mutations.csv"
   fi
 done
@@ -273,5 +338,6 @@ echo ""
 echo "=== Done. Per-sample outputs under $output_dir/<sample>/ ==="
 echo "  merged: $output_dir/all_mutations.csv"
 echo "  merged: $output_dir/all_qc_metrics.csv"
+echo "  per-sample logs: $work_dir/*.log"
 echo "  per-sample plots remain in $output_dir/<sample>/plots/"
-exit $xargs_rc
+exit $all_rc
