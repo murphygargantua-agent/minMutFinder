@@ -56,9 +56,9 @@ process waitForOutMuts {
                 rm \$file
             fi
         done
-#        sed -i 1i"SampleID;Gene;Mutation_type;Aa_change;Type_of_aa_change;Nt_mutation;Mutation_frequency" ${muts_path}/${out_path.baseName}_mutations.csv
-#        sed -i '' '1i\\SampleID;Gene;Mutation_type;Aa_change;Type_of_aa_change;Nt_mutation;Mutation_frequency' ${muts_path}/${out_path.baseName}_mutations.csv
-        printf "SampleID;Gene;Mutation_type;Aa_change;Type_of_aa_change;Nt_mutation;Mutation_frequency\\n\$(cat ${muts_path}/${out_path.baseName}_mutations.csv)" > temp && mv temp  ${muts_path}/${out_path.baseName}_mutations.csv
+#        sed -i 1i"SampleID,Gene,Mutation_type,Aa_change,Type_of_aa_change,Nt_mutation,Mutation_frequency" ${muts_path}/${out_path.baseName}_mutations.csv
+#        sed -i '' '1i\\SampleID,Gene,Mutation_type,Aa_change,Type_of_aa_change,Nt_mutation,Mutation_frequency' ${muts_path}/${out_path.baseName}_mutations.csv
+        printf "SampleID,Gene,Mutation_type,Aa_change,Type_of_aa_change,Nt_mutation,Mutation_frequency\\n\$(cat ${muts_path}/${out_path.baseName}_mutations.csv)" > temp && mv temp  ${muts_path}/${out_path.baseName}_mutations.csv
     fi
     """
 }

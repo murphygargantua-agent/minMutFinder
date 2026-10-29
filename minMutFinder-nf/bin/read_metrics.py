@@ -62,14 +62,14 @@ qc_metrics = None
 if not os.path.isfile(QC_DIR + '/qc_metrics.csv'):
     qc_metrics = open(QC_DIR + '/qc_metrics.csv', 'w')
     print('QC metrics file created')
-    qc_metrics.write('sample;test;score' + '\n')
+    qc_metrics.write('sample,test,score' + '\n')
     qc_metrics.write(SAMPLE + ';reads_total;' + str(reads_total) + '\n')
     qc_metrics.write(SAMPLE + ';reads_filt_qc;' + str(reads_filt_qc) + '\n')
     qc_metrics.write(SAMPLE + ';reads_filt_qc_paired;' + str(reads_filt_qc_paired) + '\n')
 if qc_metrics is not None:
     qc_metrics.close()
 
-qc = pd.read_csv(qc_metrics_file, sep=';')
+qc = pd.read_csv(qc_metrics_file, sep=',')
 
 sns.set_style("darkgrid", {"axes.facecolor": ".9"})
 sns.set_context("paper")

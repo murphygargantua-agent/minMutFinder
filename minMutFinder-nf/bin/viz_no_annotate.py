@@ -63,7 +63,7 @@ else:
     # df_depth = False
 
 annotate_df = pd.DataFrame()
-df_muts_ALL = pd.read_csv(MUTATIONS + '/' + SAMPLE + '_mutations.csv', sep=';')
+df_muts_ALL = pd.read_csv(MUTATIONS + '/' + SAMPLE + '_mutations.csv', sep=',')
 
 if syn_muts == 'no':
     df_muts_ALL = df_muts_ALL[df_muts_ALL.Mutation_type != "NO_MUTATION"]

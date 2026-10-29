@@ -43,13 +43,13 @@ workflow {
   def qc_csv = "$out_path/qc/qc_metrics.csv"
 
   def bash = ["/bin/bash", "-c"]
-  def qcmd = "echo 'sample;test;score' > $qc_csv && echo '${SAMPLE};qc_test;0.99' >> $qc_csv"
+  def qcmd = "echo 'sample,test,score' > $qc_csv && echo '${SAMPLE},qc_test,0.99' >> $qc_csv"
   (bash + [qcmd]).execute()
-  def mcmd = "echo 'SampleID;Gene;Mutation_type;Aa_change;Type_of_aa_change;Nt_mutation;Mutation_frequency' > $muts_csv && echo '${SAMPLE};UL1;missense;A;gain;A;1.0' >> $muts_csv && echo '${SAMPLE};UL2;synonymous;S;loss;S;0.5' >> $muts_csv"
+  def mcmd = "echo 'SampleID,Gene,Mutation_type,Aa_change,Type_of_aa_change,Nt_mutation,Mutation_frequency' > $muts_csv && echo '${SAMPLE},UL1,missense,A,gain,A,1.0' >> $muts_csv && echo '${SAMPLE},UL2,synonymous,S,loss,S,0.5' >> $muts_csv"
   (bash + [mcmd]).execute()
 
   if (params.syn_muts == "yes") {
-    (bash + ["echo '${SAMPLE};UL3;missense;G;gain;G;0.8' >> $muts_csv"]).execute()
+    (bash + ["echo '${SAMPLE},UL3,missense,G,gain,G,0.8' >> $muts_csv"]).execute()
   }
 
   if (params.annotate) {

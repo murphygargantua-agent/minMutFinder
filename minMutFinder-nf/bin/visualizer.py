@@ -27,7 +27,7 @@ def visualizer(tsv_check, csv, csv_muts, outd_p, outd_csv, genes, annotate, SAMP
     rows = len(genes_list)
 
     if tsv_check:
-        qc = pd.read_csv(csv, sep=';')
+        qc = pd.read_csv(csv, sep=',')
         qc.columns = ["ref", "test", "Count"]
 
         qc_T = pd.DataFrame(columns=['gene', 'Length', 'N_percentage', 'Coverage', 'Q1_Depth', 'Median_Depth', 'Q3_Depth'])
@@ -81,7 +81,7 @@ def visualizer(tsv_check, csv, csv_muts, outd_p, outd_csv, genes, annotate, SAMP
         fig2.write_html(outd_p + '/qc_metrics_summary.html')
 
     else:
-        qc = pd.read_csv(csv, sep=';')
+        qc = pd.read_csv(csv, sep=',')
         qc.columns = ["ref", "test", "Count"]
 
         qc_T = pd.DataFrame(columns=['gene', 'Length', 'Coverage'])
@@ -195,7 +195,7 @@ def visualizer(tsv_check, csv, csv_muts, outd_p, outd_csv, genes, annotate, SAMP
         figR.write_html(outd_p + '/Mutations_summary.html')
 
         muts_df_end = muts.drop(['ColorCode', 'TextData', 'CustomData', 'Order'], axis=1)
-        muts_df_end.to_csv(outd_csv + '/' + SAMPLE + '_mutations.csv', sep=';', index=False)
+        muts_df_end.to_csv(outd_csv + '/' + SAMPLE + '_mutations.csv', sep=',', index=False)
     else:
         fig = make_subplots(
             rows=rows, cols=1,
