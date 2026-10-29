@@ -188,6 +188,17 @@ if [[ -n "$annotate" ]]; then
   annotate_abs="$(cd "$(dirname "$annotate")" && pwd)/$(basename "$annotate")"
 fi
 
+# Check if the work directory is on a mount that supports file locks.
+# Network drives (NFS, SMB, etc.) often don't support file locking.
+if [[ "$default_work" == "true" ]]; then
+  _work_type=$(df -T "$work_dir" 2>/dev/null | tail -1 | awk '{print $NF}' | head -1)
+  if [[ "$_work_type" =~ ^nfs|smb|cifs|gluster|webdav ]]; then
+    echo "ERROR: work_dir is on a network filesystem ($_work_type). Nextflow requires file locks; use a local work_dir (--work_dir /path/to/local)." >&2
+    exit 1
+  fi
+fi
+unset _work_type
+
 declare -a samples=()
 if [[ -n "$sample_ids" ]]; then
   IFS=',' read -ra samples <<< "$sample_ids"
