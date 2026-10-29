@@ -35,7 +35,9 @@ CONFIG_OVERRIDDEN=false
 die() { echo "ERROR: $*" >&2; exit 1; }
 
 [[ -f "$NF" ]] || die "pipeline not found: $NF"
-command -v nextflow >/dev/null 2>&1 || die "nextflow not on PATH; install Nextflow (23.10.1+) or add it to PATH"
+# Use NEXTFLOW_BIN if set (allows tests/override with a fake nextflow).
+NEXTFLOW_BIN="${NEXTFLOW_BIN:-nextflow}"
+command -v "$NEXTFLOW_BIN" >/dev/null 2>&1 || die "nextflow not on PATH; install Nextflow (23.10.1+) or add it to PATH"
 
 sample_dir=
 sample_ids=
@@ -218,7 +220,7 @@ if [[ "$dry_run" == true ]]; then
     bname=$(basename "$s")
     resume_opt=""
     if [[ "$resume" == true ]]; then resume_opt=" --resume"; fi
-    echo "  nextflow run -bg$resume_opt '$NF' -c '$CONFIG' \\"
+    echo "  ${NEXTFLOW_BIN} run -bg$resume_opt '$NF' -c '$CONFIG' \\"
     echo "    --ref_seq '$ref_seq' --r1 <pair> --r2 <pair> --out_path '$output_dir/$bname' --syn_muts '$syn_muts' ${annotate:+--annotate '$annotate_abs'}"
   done
   exit 0
@@ -256,7 +258,7 @@ run_sample_bg() {
   if [[ "$resume" == true && -d "$wdir" ]]; then
     resume_flag="--resume"
   fi
-  nextflow run -bg $resume_flag "$NF" \
+  ${NEXTFLOW_BIN} run -bg $resume_flag "$NF" \
     -w "$wdir" \
     -c "$CONFIG" \
     --ref_seq "$ref_seq" \
@@ -267,9 +269,9 @@ run_sample_bg() {
     ${annotate:+--annotate "$annotate_abs"} \
     -log "$log" \
     --name "minmutfinder_$sample_name" \
-    > /dev/null 2>&1
+    > "$wdir/${sample_name}.stderr" 2>&1
 
-  echo "  launched pid=$(pgrep -f "minmutfinder_$sample_name" | head -1)"
+  echo "  launched pid=$(pgrep -f 'minmutfinder_$sample_name' | head -1)"
   
   # If resuming, clear any previous status marker so we poll the resumed run.
   if [[ "$resume" == true && -f "$status_file" ]]; then
@@ -329,17 +331,40 @@ while "$all_done"; do
       : # still running
     else
       # Process exited but no completion marker in log (e.g. mock nextflow exits
-      # immediately). Treat as done if output files exist; otherwise a failure.
+      # immediately, or Nextflow failed before writing to the log).
       if [[ -d "$output_dir/$bname" ]]; then
         echo "  $bname: completed (pre-check)"
         : > "$status_file"
       else
         echo "  $bname: FAILED (no completion marker)"
-        if [[ -f "$log" ]]; then
-          echo "  --- $bname log tail (last 30 lines) ---"
-          tail -n 30 "$log"
-          echo "  --- end $bname log ---"
+        echo "  (Nextflow process exited without 'Execution completed' or 'Execution failed' in the log)"
+        # Show the Nextflow stderr if available — it often contains the real error.
+        stderr_file="$work_dir/$bname/${bname}.stderr"
+        if [[ -f "$stderr_file" ]]; then
+          if [[ -s "$stderr_file" ]]; then
+            echo "  --- $bname stderr (last 30 lines) ---"
+            tail -n 30 "$stderr_file"
+            echo "  --- end $bname stderr ---"
+          else
+            echo "  $bname stderr file is empty."
+          fi
+        else
+          echo "  $bname stderr file not found."
         fi
+        # Show the Nextflow run log tail if available.
+        if [[ -f "$log" ]]; then
+          if [[ -s "$log" ]]; then
+            echo "  --- $bname log tail (last 30 lines) ---"
+            tail -n 30 "$log"
+            echo "  --- end $bname log ---"
+          else
+            echo "  $bname log file is empty."
+          fi
+        else
+          echo "  $bname log file not found (Nextflow may have failed to start)."
+        fi
+        echo "HINT: If Nextflow reports missing tools (minimap2, bcftools, lofreq, trimmomatic),"
+        echo "  install them from bioconda. See README for details."
         echo "FAILED" > "$status_file"
         all_rc=1
       fi
