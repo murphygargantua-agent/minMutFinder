@@ -18,3 +18,5 @@ __pycache__/
 .nextflow.log
 *.bak
 *.log
+multi_run_output
+multi_run_work

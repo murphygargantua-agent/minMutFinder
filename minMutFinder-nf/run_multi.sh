@@ -157,6 +157,16 @@ find_pair() {
 [[ -d "$sample_dir" ]] || die "sample_dir does not exist: $sample_dir"
 
 sample_dir="$(cd "$sample_dir" && pwd)"
+
+# Append run ID to default output/work dirs so each run's merged outputs are
+# namespaced and don't overwrite previous runs.
+if [[ "$default_output" == "true" ]]; then
+  output_dir="${output_dir}_${run_id}"
+fi
+if [[ "$default_work" == "true" ]]; then
+  work_dir="${work_dir}_${run_id}"
+fi
+
 output_dir="$(mkdir -p "$output_dir" && cd "$output_dir" && pwd)"
 work_dir="$(mkdir -p "$work_dir" && cd "$work_dir" && pwd)"
 ref_seq="$(cd "$(dirname "$ref_seq")" && pwd)/$(basename "$ref_seq")"
