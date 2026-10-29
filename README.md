@@ -177,8 +177,16 @@ Before running, use `--list` to verify which files get detected:
 ```
 
 The default `_R1/_R2`, `r1/r2`, and `R1/R2` conventions continue to work without
-any extra arguments. A test suite in `tests/` validates the pairing/merge logic
-without needing the real bioinformatics tools.
+any extra arguments. If your sample directories are nested (e.g. `batch1/S1`,
+`batch2/S2`), add `--recursive` to search all subdirectories:
+
+```bash
+./run_multi.sh --sample_dir samples --ref_seq ref.fasta --annotate mutations.tsv \
+  --recursive --concurrency 4
+```
+
+A test suite in `tests/` validates the pairing/merge logic (including recursive
+discovery) without needing the real bioinformatics tools.
 
 ### Validation status
 

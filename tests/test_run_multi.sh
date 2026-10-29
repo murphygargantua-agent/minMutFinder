@@ -103,6 +103,29 @@ assert "merge: qc header" "sample;test;score" "$qc_header"
 n_rows=$(wc -l < "$TMP/output/all_mutations.csv")
 assert "merge: header + 2 samples rows" "5" "$n_rows"
 
+# ---- Test 7: recursive discovery (nested sample dirs) ----
+mkdir -p "$TMP/recursive/batch1/S1" "$TMP/recursive/batch2/S2"
+echo "R1" > "$TMP/recursive/batch1/S1/S1_R1.fq"
+echo "R2" > "$TMP/recursive/batch1/S1/S1_R2.fq"
+echo "R1" > "$TMP/recursive/batch2/S2/S2_R1.fq"
+echo "R2" > "$TMP/recursive/batch2/S2/S2_R2.fq"
+out=$("$SCRIPT" --sample_dir "$TMP/recursive" --ref_seq ref.fasta --recursive --list 2>&1)
+line1=$(echo "$out" | grep '  S1:' | head -1)
+line2=$(echo "$out" | grep '  S2:' | head -1)
+assert "recursive: S1 R1" "S1_R1.fq" "$(echo "$line1" | grep -oE 'S1_R1\.fq')"
+assert "recursive: S1 R2" "S1_R2.fq" "$(echo "$line1" | grep -oE 'S1_R2\.fq')"
+assert "recursive: S2 R1" "S2_R1.fq" "$(echo "$line2" | grep -oE 'S2_R1\.fq')"
+assert "recursive: S2 R2" "S2_R2.fq" "$(echo "$line2" | grep -oE 'S2_R2\.fq')"
+
+# ---- Test 8: recursive merge (mock nextflow) ----
+rm -rf "$TMP/routput"
+mkdir -p "$TMP/routput"
+"$SCRIPT" --sample_dir "$TMP/recursive" --ref_seq ref.fasta \
+  --recursive --output_dir "$TMP/routput" \
+  --pipeline "$(pwd)/minMutFinder-nf/minMutFinder_stub.nf" --concurrency 2 2>&1 >/dev/null
+assert "recursive merge: all_mutations.csv exists" "1" "$(test -f "$TMP/routput/all_mutations.csv" && echo 1 || echo 0)"
+assert "recursive merge: header + 2 samples rows" "5" "$(wc -l < "$TMP/routput/all_mutations.csv")"
+
 echo ""
 echo "=== Results: $PASS passed, $FAIL failed ==="
 if [[ $FAIL -gt 0 ]]; then exit 1; fi
