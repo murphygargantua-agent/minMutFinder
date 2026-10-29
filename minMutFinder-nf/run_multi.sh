@@ -22,6 +22,7 @@
 #
 # Options:
 #   --poll_interval    Seconds between status polls (default 5)
+#   --resume           Resume previous Nextflow runs from their work directory
 
 set -euo pipefail
 
@@ -51,6 +52,7 @@ pipeline=""
 r1_pattern=""
 r2_pattern=""
 poll_interval=5
+resume=false
 
 while [[ $# -gt 0 ]]; do
   usage() {
@@ -94,6 +96,7 @@ EOF
     --work_dir)    work_dir="$2"; shift 2 ;;
     --concurrency) concurrency="$2"; shift 2 ;;
     --poll_interval) poll_interval="$2"; shift 2 ;;
+    --resume) resume=true; shift 1 ;;
     --dry-run)     dry_run=true; shift 1 ;;
     --config)      CONFIG="$2"; CONFIG_OVERRIDDEN=true; shift 2 ;;
     --pipeline)    pipeline="$2"; shift 2 ;;
@@ -197,7 +200,9 @@ if [[ "$dry_run" == true ]]; then
   echo "[DRY RUN] Would run the following per-sample pipelines:"
   for s in "${samples[@]}"; do
     bname=$(basename "$s")
-    echo "  nextflow run -bg '$NF' -c '$CONFIG' \\"
+    resume_opt=""
+    if [[ "$resume" == true ]]; then resume_opt=" --resume"; fi
+    echo "  nextflow run -bg$resume_opt '$NF' -c '$CONFIG' \\"
     echo "    --ref_seq '$ref_seq' --r1 <pair> --r2 <pair> --out_path '$output_dir/$bname' --syn_muts '$syn_muts' ${annotate:+--annotate '$annotate_abs'}"
   done
   exit 0
@@ -230,7 +235,12 @@ run_sample_bg() {
   echo "  R1=$r1  R2=$r2  out=$out_path  work=$wdir"
 
   # Run in background, detached from terminal; log to a per-sample file.
-  nextflow run -bg "$NF" \
+  # If --resume is set and the work dir exists from a prior run, resume it.
+  local resume_flag=""
+  if [[ "$resume" == true && -d "$wdir" ]]; then
+    resume_flag="--resume"
+  fi
+  nextflow run -bg $resume_flag "$NF" \
     -w "$wdir" \
     -c "$CONFIG" \
     --ref_seq "$ref_seq" \
@@ -244,10 +254,15 @@ run_sample_bg() {
     > /dev/null 2>&1
 
   echo "  launched pid=$(pgrep -f "minmutfinder_$sample_name" | head -1)"
+  
+  # If resuming, clear any previous status marker so we poll the resumed run.
+  if [[ "$resume" == true && -f "$status_file" ]]; then
+    rm -f "$status_file"
+  fi
   echo "  status=running"
 }
 export -f run_sample_bg find_pair
-export sample_dir output_dir work_dir NF CONFIG ref_seq syn_muts annotate_abs poll_interval r1_pattern r2_pattern
+export sample_dir output_dir work_dir NF CONFIG ref_seq syn_muts annotate_abs poll_interval r1_pattern r2_pattern resume
 
 # Launch samples in parallel (concurrency-limited).
 for i in "${!samples[@]}"; do
