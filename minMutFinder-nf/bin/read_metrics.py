@@ -58,14 +58,16 @@ reads_filt_qc_unpaired = read_count(FQ_R1_UP, FQ_R2_UP)
 reads_filt_qc_paired = read_count(FQ_R1, FQ_R2)
 reads_filt_qc = int(reads_filt_qc_paired) + int(reads_filt_qc_unpaired)
 
-if os.path.isfile(QC_DIR + '/qc_metrics.csv') is False:
-    with open(QC_DIR + '/qc_metrics.csv', 'w') as qc_metrics:
-        print('QC metrics file created')
-        qc_metrics.write('sample;test;score' + '\n')
-        qc_metrics.write(SAMPLE + ';reads_total;' + str(reads_total) + '\n')
-        qc_metrics.write(SAMPLE + ';reads_filt_qc;' + str(reads_filt_qc) + '\n')
-        qc_metrics.write(SAMPLE + ';reads_filt_qc_paired;' + str(reads_filt_qc_paired) + '\n')
-qc_metrics.close()
+qc_metrics = None
+if not os.path.isfile(QC_DIR + '/qc_metrics.csv'):
+    qc_metrics = open(QC_DIR + '/qc_metrics.csv', 'w')
+    print('QC metrics file created')
+    qc_metrics.write('sample;test;score' + '\n')
+    qc_metrics.write(SAMPLE + ';reads_total;' + str(reads_total) + '\n')
+    qc_metrics.write(SAMPLE + ';reads_filt_qc;' + str(reads_filt_qc) + '\n')
+    qc_metrics.write(SAMPLE + ';reads_filt_qc_paired;' + str(reads_filt_qc_paired) + '\n')
+if qc_metrics is not None:
+    qc_metrics.close()
 
 qc = pd.read_csv(qc_metrics_file, sep=';')
 
