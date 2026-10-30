@@ -174,6 +174,16 @@ diag_out=$(NEXTFLOW_BIN="$TMP/fake_nextflow" "$SCRIPT" --sample_dir "$TMP/diag" 
 assert "diagnostics: stderr shown on failure" "3" "$(echo "$diag_out" | grep -c 'minimap2')"
 assert "diagnostics: log status shown on failure" "1" "$(echo "$diag_out" | grep -c 'log file')"
 
+# ---- Test 11: by_protein.nf uses shell vars, not Nextflow vars ----
+# The byProteinAnalysis process loops over prot_names.txt and calls
+# by_protein_analysis.py for each CDS. Using ${prot} would be interpreted
+# as a Nextflow variable reference (which doesn't exist), causing a
+# compilation error. It must use $prot (shell variable) instead.
+bp_nf="$(cd "$(dirname "$SCRIPT")" && pwd)/modules/by_protein.nf"
+prot_count=$(grep -F '${prot}' "$bp_nf" 2>/dev/null | wc -l || true)
+prot_count=${prot_count:-0}
+assert "by_protein.nf: no Nextflow var refs for shell loop vars" "0" "$prot_count"
+
 echo ""
 echo "=== Results: $PASS passed, $FAIL failed ==="
 if [[ $FAIL -gt 0 ]]; then exit 1; fi
