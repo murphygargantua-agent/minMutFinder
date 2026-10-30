@@ -60,6 +60,8 @@ work_dir="${PIPELINE_DIR}/../multi_run_work"
 # Track whether defaults were used so we can append a run ID for namespacing.
 default_output=true
 default_work=true
+# Optional: skip network filesystem checks (e.g. for testing on network drives).
+no_lock_check=false
 # Generate a unique run ID so each run's merged outputs are namespaced
 # and don't overwrite previous runs.
 run_id="$(date +%Y%m%d_%H%M%S)_$$"
@@ -102,6 +104,7 @@ Options:
   --dry-run        Print the per-sample nextflow commands without executing them
   --list           Detect and print the paired FASTQ for each sample, then exit
   --recursive      Search for sample directories recursively (not just one level deep)
+  --no_lock_check  Skip the network filesystem lock check
 EOF
 }
 
@@ -123,6 +126,7 @@ EOF
     --r2_pattern)  r2_pattern="$2"; shift 2 ;;
     --list)        list_only=true; shift 1 ;;
     --recursive)   recursive=true; shift 1 ;;
+    --no_lock_check) no_lock_check=true; shift 1 ;;
     -h|--help) usage; exit 0 ;;
     *) echo "Unknown arg: $1"; usage; exit 1 ;;
   esac
@@ -188,27 +192,28 @@ if [[ -n "$annotate" ]]; then
   annotate_abs="$(cd "$(dirname "$annotate")" && pwd)/$(basename "$annotate")"
 fi
 
-# Check if the work directory is on a mount that supports file locks.
-# Network drives (NFS, SMB, etc.) often don't support file locking.
-if [[ "$default_work" == "true" ]]; then
-  _work_type=$(df -T "$work_dir" 2>/dev/null | tail -1 | awk '{print $2}')
-  if [[ "$_work_type" =~ ^nfs|smb|cifs|gluster|webdav ]]; then
-    echo "ERROR: work_dir is on a network filesystem ($_work_type). Nextflow needs file locks; use a local --work_dir /path/to/local." >&2
-    exit 1
+# Optional: skip network filesystem lock checks (e.g. for testing on network drives).
+# Nextflow creates .nextflow in cwd and uses file locks; network drives often fail.
+if [[ "$no_lock_check" != true ]]; then
+  # Check if the work directory is on a mount that supports file locks.
+  if [[ "$default_work" == "true" ]]; then
+    _work_type=$(df -T "$work_dir" 2>/dev/null | tail -1 | awk '{print $2}')
+    if [[ "$_work_type" =~ ^nfs|smb|cifs|gluster|webdav ]]; then
+      echo "WARNING: work_dir is on a network filesystem ($_work_type). Nextflow needs file locks; use a local --work_dir /path/to/local." >&2
+    fi
   fi
-fi
-unset _work_type
+  unset _work_type
 
-# Warn if the current working directory is on a network filesystem.
-# Nextflow creates .nextflow in cwd; network drives don't support the locks it needs.
-_cwd=$(pwd)
-_cwd_type=$(df -T "$_cwd" 2>/dev/null | tail -1 | awk '{print $2}')
-if [[ "$_cwd_type" =~ ^nfs|smb|cifs|gluster|webdav ]]; then
-  echo "WARNING: current working directory is on a network filesystem ($_cwd_type)." >&2
-  echo "  Nextflow creates .nextflow in cwd; network drives don't support file locks." >&2
-  echo "  cd to a local directory and re-run, or set NXF_HOME to a local path." >&2
+  # Warn if the current working directory is on a network filesystem.
+  _cwd=$(pwd)
+  _cwd_type=$(df -T "$_cwd" 2>/dev/null | tail -1 | awk '{print $2}')
+  if [[ "$_cwd_type" =~ ^nfs|smb|cifs|gluster|webdav ]]; then
+    echo "WARNING: current working directory is on a network filesystem ($_cwd_type)." >&2
+    echo "  Nextflow creates .nextflow in cwd; network drives don't support file locks." >&2
+    echo "  cd to a local directory and re-run, or use --no_lock_check to override." >&2
+  fi
+  unset _cwd _cwd_type
 fi
-unset _cwd _cwd_type
 
 declare -a samples=()
 if [[ -n "$sample_ids" ]]; then
