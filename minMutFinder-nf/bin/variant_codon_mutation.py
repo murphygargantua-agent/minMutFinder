@@ -281,7 +281,7 @@ def variant_codon_mutation(codon_data, ref_seq, reads, aa_pos, sample_id, gene):
 
     mut_def = [item for sublist in muts for item in ([sublist] if isinstance(sublist, list) else [sublist])]
     mut_df = pd.DataFrame(mut_def,columns=[
-                "SampleID", "Gene", "Mutation_type", "Aa_change", "Type_of_aa_change ",
+                "SampleID", "Gene", "Mutation_type", "Aa_change", "Type_of_aa_change",
                 "Nt_mutation", "Mutation_frequency"
             ])
     return mut_df

@@ -251,7 +251,7 @@ def indel_mutations_detector(vcf, ref, sample_id, gene_initial):
 
     mut_def = [item for sublist in mut for item in ([sublist] if isinstance(sublist, list) else [sublist])]
     mut_df = pd.DataFrame(mut_def,columns=[
-                    "SampleID", "Gene", "Mutation_type", "Aa_change", "Type_of_aa_change ",
+                    "SampleID", "Gene", "Mutation_type", "Aa_change", "Type_of_aa_change",
                     "Nt_mutation", "Mutation_frequency"
                 ])
     return mut_df
