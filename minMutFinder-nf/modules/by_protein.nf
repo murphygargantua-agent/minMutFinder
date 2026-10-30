@@ -83,7 +83,7 @@ process byProteinAnalysis {
     SAMPLE=${out_path.baseName}
     while IFS= read -r prot; do
         echo "Processing protein: $prot"
-        python $projectDir/bin/by_protein_analysis.py --out-dir ${out_path} --ref-seq ${ref_seq} --sample ${out_path.baseName} --prot "${prot}"
+        python $projectDir/bin/by_protein_analysis.py --out-dir ${out_path} --ref-seq ${ref_seq} --sample ${out_path.baseName} --prot "$prot"
         echo "$prot" >> ${muts_path}/stopper
     done < ${assembly_path}/prot_names.txt
     """
