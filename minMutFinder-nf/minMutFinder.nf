@@ -216,8 +216,8 @@ Beginning of analysis:
     def out_path = new File(params.out_path).getCanonicalPath()
     def ref_seq = new File(params.ref_seq).getCanonicalPath()
     def annotate = params.annotate ? new File(params.annotate).getCanonicalPath() : null
-    def r1 = params.r1 != null ? new File(params.r1).getCanonicalPath() : null
-    def r2 = params.r2 != null ? new File(params.r2).getCanonicalPath() : null
+    def r1 = params.r1 && !params.r1.equals(false) ? new File(params.r1).getCanonicalPath() : null
+    def r2 = params.r2 && !params.r2.equals(false) ? new File(params.r2).getCanonicalPath() : null
 
     // dirCreator returns 8 paths: out_path, fastq, assembly, references, variant_calling, mutations, plots, qc
     def out_paths = dirCreator(out_path)

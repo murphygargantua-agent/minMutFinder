@@ -310,8 +310,8 @@ run_sample_bg() {
     > "$wdir/${sample_name}.stderr" 2>&1
 
   # Capture the launched PID for later polling.
-  _pid=$(ps -eo pid,args | grep -i "minmutfinder_$sample_name" | grep -v grep | head -1 | awk '{print $1}')
-  echo "  launched pid=$_pid"
+  _pid=$(ps -eo pid,args | grep -i "minmutfinder_$sample_name" | grep -v grep | head -1 | awk '{print $1}') || true
+  echo "  launched pid=${_pid:-none}"
   
   # If resuming, clear any previous status marker so we poll the resumed run.
   if [[ "$resume" == true && -f "$status_file" ]]; then
@@ -367,8 +367,8 @@ while "$all_done"; do
       echo "  --- end $bname log ---"
       echo "FAILED" > "$status_file"
       all_rc=1
-    elif ps -eo args | grep -i "minmutfinder_$bname" | grep -v grep >/dev/null 2>&1; then
-      : # still running
+    elif pgrep -af "minmutfinder_$bname" >/dev/null 2>&1 || ps -eo args | grep -i "minmutfinder_$bname" | grep -v grep >/dev/null 2>&1; then
+      : # still running (Java daemon for -bg, or launcher for mock)
     else
       # Process exited but no completion marker in log (e.g. mock nextflow exits
       # immediately, or Nextflow failed before writing to the log).
