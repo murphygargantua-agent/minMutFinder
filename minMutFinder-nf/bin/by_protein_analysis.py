@@ -69,12 +69,12 @@ samfile_df = open(VARIANT_CALLING + '/samfile.sam', 'r')
 samfile_list = [line.strip().split('\t') for line in samfile_df if line.strip()]
 samfile_df.close()
 
-# df_muts_ALL = pd.DataFrame(
-#     columns=[
-#         "SampleID", "Gene", "Mutation_type", "Aa_change", "Type_of_aa_change ",
-#         "Nt_mutation", "Mutation_frequency"
-#     ]
-# )
+df_muts_ALL = pd.DataFrame(
+    columns=[
+        "SampleID", "Gene", "Mutation_type", "Aa_change", "Type_of_aa_change",
+        "Nt_mutation", "Mutation_frequency"
+    ]
+)
 
 if (df_depth_check):
     depth4prot = pd.DataFrame(columns=['ref', 'pos', 'depth'])
@@ -269,7 +269,7 @@ if grep(VCF_FILE_CUTOFF, header, 'bool'):
             print(muts)
             dfmuts = pd.DataFrame(
                 muts, columns=[
-                    "SampleID", "Gene", "Mutation_type", "Aa_change", "Type_of_aa_change ",
+                    "SampleID", "Gene", "Mutation_type", "Aa_change", "Type_of_aa_change",
                     "Nt_mutation", "Mutation_frequency"
                 ]
             )
@@ -280,7 +280,7 @@ if grep(VCF_FILE_CUTOFF, header, 'bool'):
 
         if indels.size > 0:
             muts = pd.DataFrame(columns=[
-                    "SampleID", "Gene", "Mutation_type", "Aa_change", "Type_of_aa_change ",
+                    "SampleID", "Gene", "Mutation_type", "Aa_change", "Type_of_aa_change",
                     "Nt_mutation", "Mutation_frequency"
                 ])
             for n_aa in indels.AA_POS.unique():
@@ -297,7 +297,7 @@ if grep(VCF_FILE_CUTOFF, header, 'bool'):
 
         if fixed_muts.size > 0:
             muts = pd.DataFrame(columns=[
-                    "SampleID", "Gene", "Mutation_type", "Aa_change", "Type_of_aa_change ",
+                    "SampleID", "Gene", "Mutation_type", "Aa_change", "Type_of_aa_change",
                     "Nt_mutation", "Mutation_frequency"
                 ])
             for n_aa in fixed_muts.AA_POS.unique():
@@ -309,7 +309,7 @@ if grep(VCF_FILE_CUTOFF, header, 'bool'):
 
             dfmuts = pd.DataFrame(
                 muts, columns=[
-                    "SampleID", "Gene", "Mutation_type", "Aa_change", "Type_of_aa_change ",
+                    "SampleID", "Gene", "Mutation_type", "Aa_change", "Type_of_aa_change",
                     "Nt_mutation", "Mutation_frequency"
                 ]
             )
@@ -381,7 +381,7 @@ if grep(VCF_FILE_CUTOFF, header, 'bool'):
             just_reads_df_sep = just_reads_df[0].str.extractall('(.{1,3})')[0].unstack().fillna('---')
 
             muts = pd.DataFrame(columns=[
-                    "SampleID", "Gene", "Mutation_type", "Aa_change", "Type_of_aa_change ",
+                    "SampleID", "Gene", "Mutation_type", "Aa_change", "Type_of_aa_change",
                     "Nt_mutation", "Mutation_frequency"
                 ])
             for n_aa in non_fixed_muts.AA_POS.unique():
@@ -394,14 +394,15 @@ if grep(VCF_FILE_CUTOFF, header, 'bool'):
             dfmuts = pd.DataFrame(
                 muts, columns=[
                     "SampleID", "Gene", "Mutation_type", "Aa_change",
-                    "Type_of_aa_change ", "Nt_mutation", "Mutation_frequency"
+                    "Type_of_aa_change", "Nt_mutation", "Mutation_frequency"
                 ]
             )
 
-            # if df_muts_ALL.size > 0:
-            #     df_muts_ALL = pd.concat([df_muts_ALL, dfmuts])
-            # else:
-            #     df_muts_ALL = dfmuts
+            if not df_muts_ALL.empty:
+                df_muts_ALL = pd.concat([df_muts_ALL, dfmuts])
+            else:
+                df_muts_ALL = dfmuts.copy()
+
             dfmuts.to_csv(MUTATIONS + '/' + SAMPLE + '_' + header + '_not_fixed_mutations.csv', sep=',', index=False)
 
-#df_muts_ALL.to_csv(MUTATIONS + '/' + SAMPLE + '_mutations.csv', sep=',', index=False, header=None)
+df_muts_ALL.to_csv(MUTATIONS + '/' + SAMPLE + '_mutations.csv', sep=',', index=False)
