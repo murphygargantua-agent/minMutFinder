@@ -270,8 +270,7 @@ if [[ "$dry_run" == true ]]; then
     bname=$(basename "$s")
     resume_opt=""
     if [[ "$resume" == true ]]; then resume_opt=" --resume"; fi
-    echo "  ${NEXTFLOW_BIN} run -bg$resume_opt '$NF' -c '$CONFIG' --log '$work_dir/$bname/$bname.log' \\"
-    echo "    --ref_seq '$ref_seq' --r1 <pair> --r2 <pair> --out_path '$output_dir/$bname' --syn_muts '$syn_muts' ${annotate:+--annotate '$annotate_abs'}"
+    echo "  ${NEXTFLOW_BIN} run -bg$resume_opt '$NF' -c '$CONFIG' --ref_seq '$ref_seq' --r1 <pair> --r2 <pair> --out_path '$output_dir/$bname' --syn_muts '$syn_muts' ${annotate:+--annotate '$annotate_abs'}"
   done
   exit 0
 fi
@@ -317,7 +316,6 @@ run_sample_bg() {
     --out_path "$out_path" \
     --syn_muts "$syn_muts" \
     ${annotate:+--annotate "$annotate_abs"} \
-    --log "$log" \
     --name "minmutfinder_$sample_name" \
     > "$wdir/${sample_name}.stderr" 2>&1
 
