@@ -135,38 +135,50 @@ done
 if [[ -n "$pipeline" ]]; then NF="$pipeline"; fi
 
 # Find a paired FASTQ (R1/R2) inside a sample directory.
+# Searches the sample dir and common subdirs (fastq/, reads/) so the
+# convention-based matcher finds files placed one level deep.
 find_pair() {
   local sdir="$1" r1="" r2="" stem=""
-  if [[ -n "$r1_pattern" && -n "$r2_pattern" ]]; then
-    for f in "$sdir"/*; do
-      local base="${f##*/}"
-      if [[ "$base" =~ $r1_pattern ]]; then r1="$f"; fi
-      if [[ "$base" =~ $r2_pattern ]]; then r2="$f"; fi
-    done
-  else
-    for f in "$sdir"/*; do
-      local base="${f##*/}"
-      if [[ "$base" =~ ^(.+)_R1(\.[a-zA-Z0-9]+)*$ ]]; then
-        stem="${BASH_REMATCH[1]}"
-        r1="$f"
+  _search_pair() {
+    local search_dir="$1"
+    if [[ -n "$r1_pattern" && -n "$r2_pattern" ]]; then
+      for f in "$search_dir"/*; do
+        local base="${f##*/}"
+        if [[ "$base" =~ $r1_pattern ]]; then r1="$f"; fi
+        if [[ "$base" =~ $r2_pattern ]]; then r2="$f"; fi
+      done
+    else
+      for f in "$search_dir"/*; do
+        local base="${f##*/}"
+        if [[ "$base" =~ ^(.+)_R1(\.[a-zA-Z0-9]+)*$ ]]; then
+          stem="${BASH_REMATCH[1]}"
+          r1="$f"
+        fi
+      done
+      if [[ -n "$r1" ]]; then
+        local esc="${stem//./\\.}"
+        for f in "$search_dir"/*; do
+          local base="${f##*/}"
+          if [[ "$base" =~ ^${esc}_R2(\.[a-zA-Z0-9]+)*$ ]]; then r2="$f"; break; fi
+        done
       fi
-    done
-    if [[ -n "$r1" ]]; then
-      local esc="${stem//./\\.}"
-      for f in "$sdir"/*; do
-        local base="${f##*/}"
-        if [[ "$base" =~ ^${esc}_R2(\.[a-zA-Z0-9]+)*$ ]]; then r2="$f"; break; fi
-      done
+      if [[ -z "$r2" ]]; then
+        for f in "$search_dir"/*; do
+          local base="${f##*/}"
+          case "$base" in
+            r1*|R1*) r1="$f" ;;
+            r2*|R2*) r2="$f" ;;
+          esac
+        done
+      fi
     fi
-    if [[ -z "$r2" ]]; then
-      for f in "$sdir"/*; do
-        local base="${f##*/}"
-        case "$base" in
-          r1*|R1*) r1="$f" ;;
-          r2*|R2*) r2="$f" ;;
-        esac
-      done
-    fi
+  }
+  _search_pair "$sdir"
+  if [[ -z "$r1" || -z "$r2" ]]; then
+    _search_pair "$sdir/fastq"
+  fi
+  if [[ -z "$r1" || -z "$r2" ]]; then
+    _search_pair "$sdir/reads"
   fi
   printf '%s %s' "$r1" "$r2"
 }
@@ -344,9 +356,11 @@ for s in "${samples[@]}"; do
 done
 
 # Poll until all are done.
+# Use a single boolean: assume all done, then unset it if any sample is still
+# running or failed.  When the flag stays true across a full sweep, we are done.
 all_done=true
-while "$all_done"; do
-  all_done=false
+while true; do
+  all_done=true  # reset to assume all done at the start of each sweep
   for s in "${samples[@]}"; do
     bname=$(basename "$s")
     log="$work_dir/$bname/${bname}.log"
@@ -367,13 +381,19 @@ while "$all_done"; do
       echo "  --- end $bname log ---"
       echo "FAILED" > "$status_file"
       all_rc=1
-    elif pgrep -af "minmutfinder_$bname" >/dev/null 2>&1 || ps -eo args | grep -i "minmutfinder_$bname" | grep -v grep >/dev/null 2>&1; then
+      all_done=false
+    elif pgrep -af "minmutfinder_$bname" >/dev/null 2>&1 || \
+         ps -eo args | grep -i "minmutfinder_$bname" | grep -v grep >/dev/null 2>&1; then
       : # still running (Java daemon for -bg, or launcher for mock)
+      all_done=false
     else
       # Process exited but no completion marker in log (e.g. mock nextflow exits
       # immediately, or Nextflow failed before writing to the log).
-      if [[ -d "$output_dir/$bname" ]]; then
-        echo "  $bname: completed (pre-check)"
+      # Check for the actual output files (not just the directory, which is
+      # created early by Nextflow).
+      if [[ -f "$output_dir/$bname/mutations/${bname}_mutations.csv" ]] && \
+         [[ -f "$output_dir/$bname/qc/qc_metrics.csv" ]]; then
+        echo "  $bname: completed (output files present)"
         : > "$status_file"
       else
         echo "  $bname: FAILED (no completion marker)"
@@ -407,6 +427,7 @@ while "$all_done"; do
         echo "  install them from bioconda. See README for details."
         echo "FAILED" > "$status_file"
         all_rc=1
+        all_done=false
       fi
     fi
   done

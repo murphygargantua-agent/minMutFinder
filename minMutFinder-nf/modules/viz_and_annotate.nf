@@ -50,6 +50,7 @@ process waitForOutMuts {
 #    if [[ \$(wc -l ${assembly_path}/prot_names.txt | cut -d\$' ' -f1) == \$(wc -l ${muts_path}/stopper | cut -d\$' ' -f1) ]]; then
     if [[ \$(awk 'END {print NR}' ${assembly_path}/prot_names.txt) == \$(awk 'END {print NR}' ${muts_path}/stopper) ]]; then
         rm ${muts_path}/stopper
+        echo "SampleID,Gene,Mutation_type,Aa_change,Type_of_aa_change,Nt_mutation,Mutation_frequency" > ${muts_path}/${out_path.baseName}_mutations.csv
         for file in ${muts_path}/"${out_path.baseName}"_*_mutations.csv; do
             if [[ -f \$file ]]; then
                 tail -n +2 \$file >> ${muts_path}/${out_path.baseName}_mutations.csv
@@ -58,7 +59,6 @@ process waitForOutMuts {
         done
 #        sed -i 1i"SampleID,Gene,Mutation_type,Aa_change,Type_of_aa_change,Nt_mutation,Mutation_frequency" ${muts_path}/${out_path.baseName}_mutations.csv
 #        sed -i '' '1i\\SampleID,Gene,Mutation_type,Aa_change,Type_of_aa_change,Nt_mutation,Mutation_frequency' ${muts_path}/${out_path.baseName}_mutations.csv
-        printf "SampleID,Gene,Mutation_type,Aa_change,Type_of_aa_change,Nt_mutation,Mutation_frequency\\n\$(cat ${muts_path}/${out_path.baseName}_mutations.csv)" > temp && mv temp  ${muts_path}/${out_path.baseName}_mutations.csv
     fi
     """
 }

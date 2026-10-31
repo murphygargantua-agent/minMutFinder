@@ -405,4 +405,3 @@ if grep(VCF_FILE_CUTOFF, header, 'bool'):
 
             dfmuts.to_csv(MUTATIONS + '/' + SAMPLE + '_' + header + '_not_fixed_mutations.csv', sep=',', index=False)
 
-df_muts_ALL.to_csv(MUTATIONS + '/' + SAMPLE + '_mutations.csv', sep=',', index=False)
