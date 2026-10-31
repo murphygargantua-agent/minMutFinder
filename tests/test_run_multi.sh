@@ -102,6 +102,8 @@ qc_header=$(head -1 "$TMP/output/all_qc_metrics.csv")
 assert "merge: qc header" "sample,test,score" "$qc_header"
 n_rows=$(wc -l < "$TMP/output/all_mutations.csv")
 assert "merge: header + 2 samples rows" "5" "$n_rows"
+n_headers=$(grep -c "^SampleID,Gene" "$TMP/output/all_mutations.csv")
+assert "merge: no duplicate headers" "1" "$n_headers"
 
 # ---- Test 7: recursive discovery (nested sample dirs) ----
 mkdir -p "$TMP/recursive/batch1/S1" "$TMP/recursive/batch2/S2"

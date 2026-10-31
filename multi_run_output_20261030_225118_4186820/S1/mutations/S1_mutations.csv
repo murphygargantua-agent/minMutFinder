@@ -1,0 +1,3 @@
+SampleID,Gene,Mutation_type,Aa_change,Type_of_aa_change,Nt_mutation,Mutation_frequency
+S1,UL1,missense,A,gain,A,1.0
+S1,UL2,synonymous,S,loss,S,0.5
