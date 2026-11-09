@@ -75,6 +75,24 @@ r2_pattern=""
 poll_interval=5
 resume=false
 
+# Trap Ctrl+C to kill backgrounded Nextflow jobs and exit cleanly.
+cleanup() {
+  echo ""
+  echo "=== Interrupted by user, killing backgrounded Nextflow jobs ==="
+  # Find all Nextflow processes launched by this script
+  pids=$(ps -eo pid,args | grep -i "minmutfinder_" | grep -v grep | awk '{print $1}') || true
+  if [[ -n "$pids" ]]; then
+    echo "Killing PIDs: $pids"
+    kill -TERM $pids 2>/dev/null || true
+    # Wait a few seconds for them to exit
+    sleep 3
+    # Force kill any survivors
+    kill -KILL $pids 2>/dev/null || true
+  fi
+  exit 130
+}
+trap cleanup SIGINT
+
 while [[ $# -gt 0 ]]; do
   usage() {
   cat <<'EOF'
