@@ -301,12 +301,18 @@ run_sample_bg() {
   local sample_name="${sample_path##*/}"
   local sdir="$sample_dir/$sample_path"
   local pair
+  # Create a unique local CWD for this sample's Nextflow run to avoid .nextflow lock conflicts on shared filesystems.
+  local sample_cwd
+  sample_cwd=$(mktemp -d /tmp/nextflow_cwd.XXXXXX) || die "Failed to create temp dir"
+  echo "  sample_cwd=$sample_cwd"
+
   pair=$(find_pair "$sdir")
   local r1 r2
   r1=$(echo "$pair" | awk '{print $1}')
   r2=$(echo "$pair" | awk '{print $2}')
   if [[ -z "$r1" || -z "$r2" || ! -f "$r1" || ! -f "$r2" ]]; then
     echo "ERROR: no valid paired FASTQ in $sdir (found: '$r1' '$r2')" >&2
+    rm -rf "$sample_cwd"
     return 1
   fi
   local out_path="$output_dir/$sample_name"
@@ -317,7 +323,7 @@ run_sample_bg() {
   local status_file="$wdir/${sample_name}.status"
 
   echo "=== [$(date +%T)] Launching sample: $sample_name ==="
-  echo "  R1=$r1  R2=$r2  out=$out_path  work=$wdir"
+  echo "  R1=$r1  R2=$r2  out=$out_path  work=$wdir  cwd=$sample_cwd"
 
   # Run in background, detached from terminal; log to a per-sample file.
   # If --resume is set and the work dir exists from a prior run, resume it.
@@ -325,7 +331,7 @@ run_sample_bg() {
   if [[ "$resume" == true && -d "$wdir" ]]; then
     resume_flag="--resume"
   fi
-  ${NEXTFLOW_BIN} run -bg $resume_flag "$NF" \
+  ( cd "$sample_cwd" && ${NEXTFLOW_BIN} run -bg $resume_flag "$NF" \
     -w "$wdir" \
     -c "$CONFIG" \
     --ref_seq "$ref_seq" \
@@ -335,10 +341,10 @@ run_sample_bg() {
     --syn_muts "$syn_muts" \
     ${annotate:+--annotate "$annotate_abs"} \
     --name "minmutfinder_$sample_name" \
-    > "$wdir/${sample_name}.stderr" 2>&1
+    > "$wdir/${sample_name}.stderr" 2>&1 ) &
 
   # Capture the launched PID for later polling.
-  _pid=$(ps -eo pid,args | grep -i "minmutfinder_$sample_name" | grep -v grep | head -1 | awk '{print $1}') || true
+  _pid=$!
   echo "  launched pid=${_pid:-none}"
   
   # If resuming, clear any previous status marker so we poll the resumed run.
