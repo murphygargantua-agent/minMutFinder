@@ -19,14 +19,7 @@
 
 process waitForOutMuts {
     input:
-    path out_path
-    path fq_path
-    path assembly_path
-    path ref_path
-    path vcf_path
-    path muts_path
-    path plots_path
-    path qc_path
+    path out_dir
     file indelqual_prot_bam
     file indelqual_prot_bam_indexed
     file prot_variants_vcf
@@ -43,36 +36,31 @@ process waitForOutMuts {
     file depth
 
     output:
-    path("${muts_path}/${out_path.baseName}_mutations.csv"), optional: true
+    path("${out_dir}/mutations/${out_dir.baseName}_mutations.csv"), optional: true
 
     script:
     """
-#    if [[ \$(wc -l ${assembly_path}/prot_names.txt | cut -d\$' ' -f1) == \$(wc -l ${muts_path}/stopper | cut -d\$' ' -f1) ]]; then
-    if [[ \$(awk 'END {print NR}' ${assembly_path}/prot_names.txt) == \$(awk 'END {print NR}' ${muts_path}/stopper) ]]; then
-        rm ${muts_path}/stopper
-        echo "SampleID,Gene,Mutation_type,Aa_change,Type_of_aa_change,Nt_mutation,Mutation_frequency" > ${muts_path}/${out_path.baseName}_mutations.csv
-        for file in ${muts_path}/"${out_path.baseName}"_*_mutations.csv; do
+#    if [[ \$(wc -l ${out_dir}/assembly/prot_names.txt | cut -d\$' ' -f1) == \$(wc -l ${out_dir}/mutations/stopper | cut -d\$' ' -f1) ]]; then
+    if [[ \$(awk 'END {print NR}' ${out_dir}/assembly/prot_names.txt) == \$(awk 'END {print NR}' ${out_dir}/mutations/stopper) ]]; then
+        rm ${out_dir}/mutations/stopper
+        echo "SampleID,Gene,Mutation_type,Aa_change,Type_of_aa_change,Nt_mutation,Mutation_frequency" > ${out_dir}/mutations/${out_dir.baseName}_mutations.csv
+        for file in ${out_dir}/mutations/"${out_dir.baseName}"_*_mutations.csv; do
             if [[ -f \$file ]]; then
-                tail -n +2 \$file >> ${muts_path}/${out_path.baseName}_mutations.csv
+                tail -n +2 \$file >> ${out_dir}/mutations/${out_dir.baseName}_mutations.csv
                 rm \$file
             fi
         done
-#        sed -i 1i"SampleID,Gene,Mutation_type,Aa_change,Type_of_aa_change,Nt_mutation,Mutation_frequency" ${muts_path}/${out_path.baseName}_mutations.csv
-#        sed -i '' '1i\\SampleID,Gene,Mutation_type,Aa_change,Type_of_aa_change,Nt_mutation,Mutation_frequency' ${muts_path}/${out_path.baseName}_mutations.csv
+#        sed -i 1i"SampleID,Gene,Mutation_type,Aa_change,Type_of_aa_change,Nt_mutation,Mutation_frequency" ${out_dir}/mutations/${out_dir.baseName}_mutations.csv
+#        sed -i '' '1i\\SampleID,Gene,Mutation_type,Aa_change,Type_of_aa_change,Nt_mutation,Mutation_frequency' ${out_dir}/mutations/${out_dir.baseName}_mutations.csv
     fi
     """
 }
 
 process vizNoAnnot {
+    conda 'conda-forge::python=3.11 conda-forge::pandas conda-forge::numpy conda-forge::plotly conda-forge::biopython'
+
     input:
-    path out_path
-    path fq_path
-    path assembly_path
-    path ref_path
-    path vcf_path
-    path muts_path
-    path plots_path
-    path qc_path
+    path out_dir
     path ref_seq
     file muts
     val syn_muts
@@ -82,20 +70,15 @@ process vizNoAnnot {
 
     script:
     """
-    python3 $projectDir/bin/viz_no_annotate.py --out-dir ${out_path} --ref-seq ${ref_seq} --prot-names ${assembly_path}/prot_names.txt --syn-muts ${params.syn_muts}
+    python3 $projectDir/bin/viz_no_annotate.py --out-dir ${out_dir} --ref-seq ${ref_seq} --prot-names ${out_dir}/assembly/prot_names.txt --syn-muts ${params.syn_muts}
     """
 }
 
 process annotateAndViz {
+    conda 'conda-forge::python=3.11 conda-forge::pandas conda-forge::numpy conda-forge::plotly conda-forge::biopython'
+
     input:
-    path out_path
-    path fq_path
-    path assembly_path
-    path ref_path
-    path vcf_path
-    path muts_path
-    path plots_path
-    path qc_path
+    path out_dir
     path ref_seq
     file annotate
     file muts
@@ -106,6 +89,6 @@ process annotateAndViz {
 
     script:
     """
-    python3 $projectDir/bin/annotate_and_viz.py --out-dir ${out_path} --annotate ${annotate} --ref-seq ${ref_seq} --prot-names ${assembly_path}/prot_names.txt --syn-muts ${params.syn_muts}
+    python3 $projectDir/bin/annotate_and_viz.py --out-dir ${out_dir} --annotate ${annotate} --ref-seq ${ref_seq} --prot-names ${out_dir}/assembly/prot_names.txt --syn-muts ${params.syn_muts}
     """
 }

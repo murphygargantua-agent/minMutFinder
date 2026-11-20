@@ -19,14 +19,7 @@
 
 process protNames {
     input:
-    path out_path
-    path fq_path
-    path assembly_path
-    path ref_path
-    path vcf_path
-    path muts_path
-    path plots_path
-    path qc_path
+    path out_dir
     file indelqual_prot_bam
     file indelqual_prot_bam_indexed
     file prot_variants_vcf
@@ -41,50 +34,44 @@ process protNames {
 
 
     output:
-    file "${assembly_path}/*_prot_name"
-    
+    file "${out_dir}/assembly/*_prot_name"
+
     script:
     """
-    DIR_SAMPLE=${out_path}
-    SAMPLE=${out_path.baseName}
-    ASSEMBLY=${assembly_path}
-    grep -v "#" ${vcf_file} | cut -d\$'\t' -f1 | uniq > ${assembly_path}/prot_names.txt
+    DIR_SAMPLE=${out_dir}
+    SAMPLE=${out_dir.baseName}
+    ASSEMBLY=${out_dir}/assembly
+    grep -v "#" ${vcf_file} | cut -d\$'\t' -f1 | uniq > ${out_dir}/assembly/prot_names.txt
     grep -v "#" ${vcf_file} | cut -d\$'\t' -f1 | uniq | awk -F "|" '{close(F); ID=\$0; gsub("^>", "", ID); F="'\${ASSEMBLY}/'"ID"_prot_name"} {print >> F}'
     """
 }
 
 
 process byProteinAnalysis {
-    input:    
-    path out_path
-    path fq_path
-    path assembly_path
-    path ref_path
-    path vcf_path
-    path muts_path
-    path plots_path
-    path qc_path
+    conda 'conda-forge::python=3.11 conda-forge::pandas conda-forge::numpy conda-forge::plotly conda-forge::biopython'
+
+    input:
+    path out_dir
     path ref_seq
     file protein
     file depth
 
     output:
-    path("${muts_path}/${out_path.baseName}_*_mutations.csv"), optional: true
-    // file "${muts_path}/${out_path.baseName}_*_mutations.csv"
-    // file "${vcf_path}/sam_to_loop_*.sam"
-    // file "${vcf_path}/samfile_*.tsv"
-    file "${qc_path}/*_qc_metrics.csv"
-    file "${assembly_path}/*_depth.tsv"
-
+    path("${out_dir}/mutations/${out_dir.baseName}_*_mutations.csv"), optional: true
+    // file "${out_dir}/mutations/${out_dir.baseName}_*_mutations.csv"
+    // file "${out_dir}/variant_calling/sam_to_loop_*.sam"
+    // file "${out_dir}/variant_calling/samfile_*.tsv"
+    file "${out_dir}/qc/*_qc_metrics.csv"
+    file "${out_dir}/assembly/*_depth.tsv"
 
     script:
     """
-    MUTATIONS=${muts_path}
-    SAMPLE=${out_path.baseName}
+    MUTATIONS=${out_dir}/mutations
+    SAMPLE=${out_dir.baseName}
     while IFS= read -r prot; do
         echo -e ""\$prot" is the protein fasta name"
-        python $projectDir/bin/by_protein_analysis.py --out-dir ${out_path} --ref-seq ${ref_seq} --sample ${out_path.baseName} --prot "\$prot"
-        echo \$prot >> ${muts_path}/stopper
-    done < ${assembly_path}/prot_names.txt
+        python $projectDir/bin/by_protein_analysis.py --out-dir ${out_dir} --ref-seq ${ref_seq} --sample ${out_dir.baseName} --prot "\$prot"
+        echo \$prot >> ${out_dir}/mutations/stopper
+    done < ${out_dir}/assembly/prot_names.txt
     """
 }

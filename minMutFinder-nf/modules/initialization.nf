@@ -20,44 +20,46 @@
 process dirCreator {
 
     input:
-    path out_path
+    path out_dir
 
     output:
-    path "${out_path}"
-    path "${out_path}/fastq"
-    path "${out_path}/assembly"
-    path "${out_path}/assembly/references"
-    path "${out_path}/variant_calling"
-    path "${out_path}/mutations"
-    path "${out_path}/plots"
-    path "${out_path}/qc"
+    path "${out_dir}"
+    path "${out_dir}/fastq"
+    path "${out_dir}/assembly"
+    path "${out_dir}/assembly/references"
+    path "${out_dir}/variant_calling"
+    path "${out_dir}/mutations"
+    path "${out_dir}/plots"
+    path "${out_dir}/qc"
 
     script:
     """
     #!/bin/bash
     echo Creating directories..
-    DIR_SAMPLE="${out_path}"
-    if [[ -d "\${DIR_SAMPLE}" ]]; then echo -e ""\${DIR_SAMPLE}" output folder already exists"; else mkdir "\${DIR_SAMPLE}"; fi
-    QC_DIR="${out_path}/qc"
+    DIR_SAMPLE="${out_dir}"
+    if [[ -d "\${DIR_SAMPLE}" ]]; then echo -e ""\${DIR_SAMPLE}" output folder already exists"; else mkdir -p "\${DIR_SAMPLE}"; fi
+    QC_DIR="${out_dir}/qc"
     if [[ -d "\${QC_DIR}" ]]; then echo -e ""\${QC_DIR}" output folder already exists"; else mkdir "\${QC_DIR}"; fi
-    FASTQ="${out_path}/fastq"
+    FASTQ="${out_dir}/fastq"
     if [[ -d "\${FASTQ}" ]]; then echo -e ""\${FASTQ}" output folder already exists"; else mkdir "\${FASTQ}"; fi
-    ASSEMBLY="${out_path}/assembly"
-    REF_PATH="${out_path}/assembly/references"
+    ASSEMBLY="${out_dir}/assembly"
+    REF_PATH="${out_dir}/assembly/references"
     if [[ -d "\${ASSEMBLY}" ]]; then echo -e ""\${ASSEMBLY}" output folder already exists"; else mkdir "\${ASSEMBLY}"; fi
     if [[ -d "\${REF_PATH}" ]]; then echo -e ""\${REF_PATH}" output folder already exists"; else mkdir "\${REF_PATH}"; fi
-    VARIANT_CALLING="${out_path}/variant_calling"
+    VARIANT_CALLING="${out_dir}/variant_calling"
     if [[ -d "\$VARIANT_CALLING" ]]; then echo -e ""\${VARIANT_CALLING}" output folder already exists"; else mkdir "\${VARIANT_CALLING}"; fi
-    MUTATIONS="${out_path}/mutations"
+    MUTATIONS="${out_dir}/mutations"
     if [[ -d "\${MUTATIONS}" ]]; then echo -e ""\${MUTATIONS}" output folder already exists"; else mkdir \${MUTATIONS}; fi
-    touch ${out_path}/mutations/stopper
-    PLOTS="${out_path}/plots"
+    touch ${out_dir}/mutations/stopper
+    PLOTS="${out_dir}/plots"
     if [[ -d "\${PLOTS}" ]]; then echo -e ""\${PLOTS}" output folder already exists"; else mkdir "\${PLOTS}"; fi
     """
 }
 
 
 process refCheck {
+    conda 'conda-forge::python=3.11'
+
     input:
     val ref_seq
 

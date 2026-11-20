@@ -97,28 +97,43 @@ plot (default is "no") (4)
 
 ### Multi-sample
 
-Run multiple samples at once with `run_multi.sh`, which reuses the tested
-single-sample pipeline in parallel (concurrency-limited) and merges per-sample
-results into master tables:
+Run multiple samples at once with a **manifest CSV**: one row per sample with the columns
+`sample_name`, `r1` and `r2`. Nextflow runs each sample in parallel within a single pipeline
+run and merges the per-sample results into master tables.
 
 ```bash
-./run_multi.sh \
-  --sample_dir <dir_with_one_subdir_per_sample> \
+nextflow run minMutFinder.nf \
+  --manifest samples.csv \
   --ref_seq <ref.fa> \
   --annotate <mutations.tsv> \
   --syn_muts yes \
-  --concurrency 2
+  --out_path <output_dir>
 ```
 
-`run_multi.sh` accepts `--pipeline <nf_file>`, `--config <config_file>`, and
-`--output_dir <dir>` in addition to the standard arguments.
+The manifest CSV (`samples.csv`) must have a header row and the columns:
+`sample_name`, `r1`, `r2`. Paths may be relative (resolved against the CWD) or absolute.
 
-Each sample subdirectory should contain a paired FASTQ set
-(`{sample}_R1.fq.gz` + `{sample}_R2.fq.gz`, or `r1.fq`/`r2.fq`).
-Outputs are merged into `all_mutations.csv` and `all_qc_metrics.csv` under
-`--output_dir`.
+Outputs are merged into `all_mutations.csv` and `all_qc_metrics.csv` under `--out_path`:
 
----
+```bash
+// samples.csv
+sample_name,r1,r2
+SampleA,/path/to/SampleA_R1.fq.gz,/path/to/SampleA_R2.fq.gz
+SampleB,/path/to/SampleB_R1.fq.gz,/path/to/SampleB_R2.fq.gz
+```
+
+Per-sample outputs land in `<out_path>/<sample_name>/`; merged tables
+`all_mutations.csv` and `all_qc_metrics.csv` are written to `<out_path>`.
+
+To smoke-test the orchestration without installing bioinformatics tools, swap in the stub pipeline:
+
+```bash
+nextflow run minMutFinder.nf --manifest samples.csv --ref_seq minMutFinder-nf/resources/cmv_cds.fasta --pipeline minMutFinder-nf/minMutFinder_stub.nf
+```
+
+**Note**: The legacy single-sample mode (`--r1`/`--r2`) is still supported; each sample still
+runs through the same per-sample pipeline, just driven by Nextflow instead of `run_multi.sh`.
+
 
 ## 🔏 License
 
@@ -172,6 +187,45 @@ We're always happy to help!
 """
 }
 
+process mergeMutations {
+    input:
+    path muts_csv
+    path out_root
+
+    output:
+    path "${out_root}/all_mutations.csv"
+
+    script:
+    """
+    echo "SampleID,Gene,Mutation_type,Aa_change,Type_of_aa_change,Nt_mutation,Mutation_frequency" > ${out_root}/all_mutations.csv
+    for f in ${muts_csv}; do
+        if [[ -f "\$f" ]]; then
+            tail -n +2 "\$f" >> ${out_root}/all_mutations.csv
+        fi
+    done
+    """
+}
+
+process mergeQc {
+    input:
+    path qc_csv
+    path out_root
+
+    output:
+    path "${out_root}/all_qc_metrics.csv"
+
+    script:
+    """
+    echo "sample,test,score" > ${out_root}/all_qc_metrics.csv
+    for f in ${qc_csv}; do
+        if [[ -f "\$f" ]]; then
+            tail -n +2 "\$f" >> ${out_root}/all_qc_metrics.csv
+        fi
+    done
+    """
+}
+
+
 workflow {
     if (params.version || params.v) {
         versionMessage()
@@ -216,60 +270,94 @@ Beginning of analysis:
     def out_path = new File(params.out_path).getCanonicalPath()
     def ref_seq = new File(params.ref_seq).getCanonicalPath()
     def annotate = params.annotate ? new File(params.annotate).getCanonicalPath() : null
-    def r1 = params.r1 && !params.r1.equals(false) ? new File(params.r1).getCanonicalPath() : null
-    def r2 = params.r2 && !params.r2.equals(false) ? new File(params.r2).getCanonicalPath() : null
 
-    // dirCreator returns 8 paths: out_path, fastq, assembly, references, variant_calling, mutations, plots, qc
-    def out_paths = dirCreator(out_path)
-    def (p_out, p_fq, p_asm, p_ref, p_vcf, p_mut, p_plt, p_qc) = out_paths
+    // ---------------------------------------------------------------------------
+    // Sample input: manifest CSV (sample_name, r1, r2) OR legacy --r1/--r2 single sample.
+    // ---------------------------------------------------------------------------
+    if (params.manifest) {
+        // Read the CSV manifest; each row becomes a [sample_name, r1, r2] tuple of
+        // canonical paths so scripts in isolated work dirs can always find the files.
+        def manifestChannel = Channel.fromPath(params.manifest).splitCsv(header: true, quote: '"')
+            .map { row -> [row.sample_name, new File(row.r1).getCanonicalPath(), new File(row.r2).getCanonicalPath()] }
+        manifestChannel.set { ch_samples }
+    } else {
+        // Legacy single-sample mode: out_dir is the user-supplied out_path so the
+        // per-sample naming behaviour (out_path.baseName) is preserved.
+        def r1 = params.r1 && !params.r1.equals(false) ? new File(params.r1).getCanonicalPath() : null
+        def r2 = params.r2 && !params.r2.equals(false) ? new File(params.r2).getCanonicalPath() : null
+        Channel.of([null, r1, r2]).set { ch_samples }
+    }
+
+    // Attach the per-sample output dir (out_path/<sample_name>) and the resolved reference
+    // to every sample. Nextflow zips the fields of the channel element-wise so each
+    // instance of the chain below gets one complete sample.
+    ch_samples.map { name, r1, r2 ->
+        def out_dir = params.manifest ? new File(out_path, name).getCanonicalPath() : out_path
+        // Pre-create the per-sample dir: Nextflow symlinks path inputs into the work dir,
+        // and process scripts can only mkdir through a symlink whose target exists.
+        new File(out_dir).mkdirs()
+        [name, r1, r2, ref_seq, out_dir]
+    }.set { ch }
+
+    // Split the sample tuple into individual channels; Nextflow pairs them element-wise
+    // (the `ref_seq` field is broadcast to every instance).
+    def ch_names = ch.map { it[0] }
+    def ch_r1 = ch.map { it[1] }
+    def ch_r2 = ch.map { it[2] }
+    def ch_ref_seq = ch.map { it[3] }
+    def ch_out_dir = ch.map { it[4] }
+
+    // Create the per-sample output directories.
+    dirCreator(ch_out_dir)
     refCheck(ref_seq)
 
-    // fastqProcessing outputs: ref_seq.fasta, ref_seq.fasta.fai, qc_R1, qc_R2, qc_R1_unpaired, qc_R2_unpaired
-    def (rfasta, rfasta_fai, qR1, qR2, qR1u, qR2u) = fastqProcessing(
-                r1, r2, ref_seq,
-                p_out, p_fq, p_asm, p_ref, p_vcf, p_mut, p_plt, p_qc)
+    // ---------------------------------------------------------------------------
+    // Per-sample pipeline chain. Nextflow fans out each process once per sample
+    // (one DAG instance per channel element), then joins the channels again.
+    // ---------------------------------------------------------------------------
+    def (rfasta, rfasta_fai, qR1, qR2, qR1u, qR2u) = fastqProcessing(ch_r1, ch_r2, ch_ref_seq, ch_out_dir)
 
-    reads_qc_plot(
-        r1, r2,
-        p_out, p_fq, p_asm, p_ref, p_vcf, p_mut, p_plt, p_qc,
-        ref_seq, rfasta_fai, qR1, qR2, qR1u, qR2u)
+    reads_qc_plot(ch_r1, ch_r2, ch_out_dir, ch_ref_seq, rfasta_fai, qR1, qR2, qR1u, qR2u)
 
-    def (map_sam, map_bam) = mapping1(
-        p_out, p_fq, p_asm, p_ref, p_vcf, p_mut, p_plt, p_qc,
-        ref_seq, rfasta_fai, qR1, qR2, qR1u, qR2u)
+    def (map_sam, map_bam) = mapping1(ch_r1, ch_r2, ch_ref_seq, ch_out_dir, rfasta_fai, qR1, qR2, qR1u, qR2u)
 
     def (v_bam, v_bam_bai, v_vcf, v_sam, v_samfile,
          v_vcf_gz, v_vcf_gz_csi, v_af05_vcf, v_af05_vcf_gz, v_af05_vcf_gz_csi, v_af05_fasta) = variant_calling(
-        p_out, p_fq, p_asm, p_ref, p_vcf, p_mut, p_plt, p_qc, map_sam, map_bam)
+        ch_out_dir, map_sam, map_bam)
 
     def (cons_sam, cons_bam) = mapping2(
-        p_out, p_fq, p_asm, p_ref, p_vcf, p_mut, p_plt, p_qc,
-        v_bam, v_bam_bai, v_vcf, v_sam, v_samfile, v_vcf_gz, v_vcf_gz_csi,
+        ch_out_dir, v_bam, v_bam_bai, v_vcf, v_sam, v_samfile, v_vcf_gz, v_vcf_gz_csi,
         v_af05_vcf, v_af05_vcf_gz, v_af05_vcf_gz_csi, v_af05_fasta)
 
-    def depth_tsv = read_depth(
-        p_out, p_fq, p_asm, p_ref, p_vcf, p_mut, p_plt, p_qc, map_sam, map_bam)
+    def depth_tsv = read_depth(ch_out_dir, map_sam, map_bam)
 
     def prot_names = protNames(
-        p_out, p_fq, p_asm, p_ref, p_vcf, p_mut, p_plt, p_qc,
-        v_bam, v_bam_bai, v_vcf, v_sam, v_samfile, v_vcf_gz, v_vcf_gz_csi,
+        ch_out_dir, v_bam, v_bam_bai, v_vcf, v_sam, v_samfile, v_vcf_gz, v_vcf_gz_csi,
         v_af05_vcf, v_af05_vcf_gz, v_af05_vcf_gz_csi, v_af05_fasta)
 
     def (mut_csv, per_qc, per_depth) = byProteinAnalysis(
-        p_out, p_fq, p_asm, p_ref, p_vcf, p_mut, p_plt, p_qc,
-        ref_seq, prot_names, depth_tsv)
+        ch_out_dir, ch_ref_seq, prot_names, depth_tsv)
 
     def final_muts = waitForOutMuts(
-        p_out, p_fq, p_asm, p_ref, p_vcf, p_mut, p_plt, p_qc,
-        v_bam, v_bam_bai, v_vcf, v_sam, v_samfile, v_vcf_gz, v_vcf_gz_csi,
+        ch_out_dir, v_bam, v_bam_bai, v_vcf, v_sam, v_samfile, v_vcf_gz, v_vcf_gz_csi,
         v_af05_vcf, v_af05_vcf_gz, v_af05_vcf_gz_csi, v_af05_fasta,
         mut_csv, per_qc, per_depth)
 
     if ( annotate ){
-        annotateAndViz(p_out, p_fq, p_asm, p_ref, p_vcf, p_mut, p_plt, p_qc,
-                       ref_seq, annotate, final_muts, params.syn_muts)
+        annotateAndViz(ch_out_dir, ch_ref_seq, final_muts, annotate, params.syn_muts)
     } else {
-        vizNoAnnot(p_out, p_fq, p_asm, p_ref, p_vcf, p_mut, p_plt, p_qc,
-                   ref_seq, final_muts, params.syn_muts)
+        vizNoAnnot(ch_out_dir, ch_ref_seq, final_muts, params.syn_muts)
     }
+
+    // ---------------------------------------------------------------------------
+    // Merge per-sample results into master tables under out_path.
+    // The `.collect()` call reduces each channel to a single list of paths so the
+    // merge process is executed once with every sample (rather than once per
+    // sample), which is what the bash orchestrator did before.
+    // ---------------------------------------------------------------------------
+    def all_muts = final_muts.collect()
+    def all_qc = per_qc.collect()
+
+    if (all_muts) { mergeMutations(all_muts, out_path) }
+    if (all_qc) { mergeQc(all_qc, out_path) }
 }

@@ -18,32 +18,29 @@
 // Copyright (C) 2024 Respiratory Viruses Unit, Microbiology Department, Vall d’Hebron Hospital Universitari, Vall d’Hebron Institut de Recerca (VHIR), Vall d’Hebron Barcelona Hospital Campus, Passeig Vall d’Hebron 119-129, 08035 Barcelona, Spain
 
 process fastqProcessing {
+    conda 'bioconda::trimmomatic=0.39 bioconda::samtools=1.13'
+
     input:
     path r1
     path r2
     path ref_seq
-    path out_path
-    path fq_path
-    path assembly_path
-    path ref_path
-    path vcf_path
-    path muts_path
-    path plots_path
-    path qc_path
+    path out_dir
 
     output:
-    file "${assembly_path}/ref_seq.fasta"
-    file "${assembly_path}/ref_seq.fasta.fai"
-    file "${fq_path}/${out_path.baseName}_qc_R1.fastq.gz"
-    file "${fq_path}/${out_path.baseName}_qc_R2.fastq.gz"
-    file "${fq_path}/${out_path.baseName}_qc_R1_unpaired.fastq.gz"
-    file "${fq_path}/${out_path.baseName}_qc_R2_unpaired.fastq.gz"
+    file "${out_dir}/assembly/ref_seq.fasta"
+    file "${out_dir}/assembly/ref_seq.fasta.fai"
+    file "${out_dir}/fastq/${out_dir.baseName}_qc_R1.fastq.gz"
+    file "${out_dir}/fastq/${out_dir.baseName}_qc_R2.fastq.gz"
+    file "${out_dir}/fastq/${out_dir.baseName}_qc_R1_unpaired.fastq.gz"
+    file "${out_dir}/fastq/${out_dir.baseName}_qc_R2_unpaired.fastq.gz"
+
 
     script:
     """
-    DIR_SAMPLE=${out_path}
-    FASTQ=${fq_path}
-    ASSEMBLY=${assembly_path}
+    DIR_SAMPLE=${out_dir}
+    FASTQ=${out_dir}/fastq
+    ASSEMBLY=${out_dir}/assembly
+    mkdir -p "\${ASSEMBLY}" "\${FASTQ}"
     SAMPLE=\$(basename \${DIR_SAMPLE})
     echo "\${SAMPLE}"
 
@@ -60,16 +57,13 @@ process fastqProcessing {
 }
 
 process mapping1 {
+    conda 'bioconda::minimap2=2.26 bioconda::samtools=1.13'
+
     input:
-    path out_path
-    path fq_path
-    path assembly_path
-    path ref_path
-    path vcf_path
-    path muts_path
-    path plots_path
-    path qc_path
-    file ref_seq
+    path r1
+    path r2
+    path ref_seq
+    path out_dir
     file ref_seq_fai
     file fqr1
     file fqr2
@@ -77,14 +71,15 @@ process mapping1 {
     file fqUPr2
 
     output:
-    file "${assembly_path}/${out_path.baseName}_reads-mapped_to_prot.sam"
-    file "${assembly_path}/${out_path.baseName}_reads-mapped_to_prot.bam"
+    file "${out_dir}/assembly/${out_dir.baseName}_reads-mapped_to_prot.sam"
+    file "${out_dir}/assembly/${out_dir.baseName}_reads-mapped_to_prot.bam"
+
 
     script:
     """
-    DIR_SAMPLE=${out_path}
+    DIR_SAMPLE=${out_dir}
     SAMPLE=\$(basename \${DIR_SAMPLE})
-    ASSEMBLY=${assembly_path}
+    ASSEMBLY=${out_dir}/assembly
     FQ_R1=${fqr1}
     FQ_R2=${fqr2}
     echo -e "\nMINIMAP2\n->Mapping against "\${ASSEMBLY}/ref_seq.fasta"\n"
@@ -95,81 +90,71 @@ process mapping1 {
 }
 
 process variant_calling {
+    conda 'bioconda::lofreq=2.1.5 bioconda::samtools=1.13 bioconda::bcftools=1.15'
+
     input:
-    path out_path
-    path fq_path
-    path assembly_path
-    path ref_path
-    path vcf_path
-    path muts_path
-    path plots_path
-    path qc_path
+    path out_dir
     file sam
     file bam
 
-
     output:
-    file "${vcf_path}/${out_path.baseName}_indelqual_prot.bam"
-    file "${vcf_path}/${out_path.baseName}_indelqual_prot.bam.bai"
-    file "${vcf_path}/${out_path.baseName}_prot_variants.vcf"
-    file "${vcf_path}/${out_path.baseName}_indelqual_prot.sam"
-    file "${vcf_path}/samfile.sam"
-    file "${vcf_path}/${out_path.baseName}_prot_variants.vcf.gz"
-    file "${vcf_path}/${out_path.baseName}_prot_variants.vcf.gz.csi"
-    file "${vcf_path}/${out_path.baseName}_prot_variants_AF-0.05.vcf"
-    file "${vcf_path}/${out_path.baseName}_prot_variants_AF-0.05.vcf.gz"
-    file "${vcf_path}/${out_path.baseName}_prot_variants_AF-0.05.vcf.gz.csi"
-    file "${assembly_path}/${out_path.baseName}_prot_variants_AF-0.05.fasta"
-    
+    file "${out_dir}/variant_calling/${out_dir.baseName}_indelqual_prot.bam"
+    file "${out_dir}/variant_calling/${out_dir.baseName}_indelqual_prot.bam.bai"
+    file "${out_dir}/variant_calling/${out_dir.baseName}_prot_variants.vcf"
+    file "${out_dir}/variant_calling/${out_dir.baseName}_indelqual_prot.sam"
+    file "${out_dir}/variant_calling/samfile.sam"
+    file "${out_dir}/variant_calling/${out_dir.baseName}_prot_variants.vcf.gz"
+    file "${out_dir}/variant_calling/${out_dir.baseName}_prot_variants.vcf.gz.csi"
+    file "${out_dir}/variant_calling/${out_dir.baseName}_prot_variants_AF-0.05.vcf"
+    file "${out_dir}/variant_calling/${out_dir.baseName}_prot_variants_AF-0.05.vcf.gz"
+    file "${out_dir}/variant_calling/${out_dir.baseName}_prot_variants_AF-0.05.vcf.gz.csi"
+    file "${out_dir}/assembly/${out_dir.baseName}_prot_variants_AF-0.05.fasta"
+
+
     script:
     """
-    DIR_SAMPLE=${out_path}
+    DIR_SAMPLE=${out_dir}
     SAMPLE=\$(basename \${DIR_SAMPLE})
-    ASSEMBLY=${assembly_path}
-    VARIANT_CALLING=${vcf_path}
+    ASSEMBLY=${out_dir}/assembly
+    VARIANT_CALLING=${out_dir}/variant_calling
     BAM2=${bam}
 
     # Call variants
-    # tomake lofreq work 
+    # tomake lofreq work
     echo -e "\nLOFREQ\n->Variant Calling Step: Mutation detection\n"
-    
+
     lofreq indelqual --dindel -f "\${ASSEMBLY}/ref_seq.fasta" -o "\${VARIANT_CALLING}"/"\${SAMPLE}"_indelqual_prot.bam "\$BAM2"
     INDELQUAL_BAM="\${VARIANT_CALLING}"/"\${SAMPLE}"_indelqual_prot.bam
     samtools index "\${INDELQUAL_BAM}"
     # tomake lofreq work
     time (lofreq call-parallel --pp-threads 64 --call-indels -f "\${ASSEMBLY}/ref_seq.fasta" -o "\${VARIANT_CALLING}"/"\${SAMPLE}"_prot_variants.vcf "\${INDELQUAL_BAM}")
-    
+
     samtools index "\${INDELQUAL_BAM}"
     samtools view -h -o "\${VARIANT_CALLING}"/"\${SAMPLE}"_indelqual_prot.sam "\${INDELQUAL_BAM}"
-   
+
     awk '(\$6 != "*") && (\$12 != "") && (\$3 != "*")' "\${VARIANT_CALLING}"/"\${SAMPLE}"_indelqual_prot.sam > "\${VARIANT_CALLING}"/samfile.sam
-   
+
     # Consensus sequence
     echo -e "\nBCFTOOLS\n->Variant Calling Step: Consensus sequence obtantion\n"
-   
+
     bgzip -c "\${VARIANT_CALLING}"/"\${SAMPLE}"_prot_variants.vcf > "\${VARIANT_CALLING}"/"\$SAMPLE"_prot_variants.vcf.gz
     bcftools index "\${VARIANT_CALLING}"/"\${SAMPLE}"_prot_variants.vcf.gz
     FREQ_CUTOFF=0.05
-    bcftools filter -i'AF>='\${FREQ_CUTOFF}' & DP>=20' "\${VARIANT_CALLING}"/"\${SAMPLE}"_prot_variants.vcf.gz > "\${VARIANT_CALLING}"/"\${SAMPLE}"_prot_variants_AF-"\${FREQ_CUTOFF}".vcf
-    VCF_FILE_CUTOFF="\${VARIANT_CALLING}"/"\${SAMPLE}"_prot_variants_AF-"\${FREQ_CUTOFF}".vcf
-    bgzip -c "\${VARIANT_CALLING}"/"\${SAMPLE}"_prot_variants_AF-"\${FREQ_CUTOFF}".vcf > "\${VARIANT_CALLING}"/"\${SAMPLE}"_prot_variants_AF-"\${FREQ_CUTOFF}".vcf.gz
+    bcftools filter -i "AF>=\${FREQ_CUTOFF} & DP>=20" "\${VARIANT_CALLING}/\${SAMPLE}_prot_variants.vcf.gz" > "\${VARIANT_CALLING}/\${SAMPLE}_prot_variants_AF-\${FREQ_CUTOFF}.vcf"
+    VCF_FILE_CUTOFF="\${VARIANT_CALLING}/\${SAMPLE}_prot_variants_AF-\${FREQ_CUTOFF}.vcf"
+    bgzip -c "\${VARIANT_CALLING}/\${SAMPLE}_prot_variants_AF-\${FREQ_CUTOFF}.vcf" > "\${VARIANT_CALLING}/\${SAMPLE}_prot_variants_AF-\${FREQ_CUTOFF}.vcf.gz"
     bcftools index \${VARIANT_CALLING}/"\${SAMPLE}"_prot_variants_AF-"\${FREQ_CUTOFF}".vcf.gz
-    cat "\${ASSEMBLY}/ref_seq.fasta" | bcftools consensus -s - "\${VARIANT_CALLING}"/"\${SAMPLE}"_prot_variants_AF-"\${FREQ_CUTOFF}".vcf.gz -o "\${ASSEMBLY}"/"\${SAMPLE}"_prot_variants_AF-"\${FREQ_CUTOFF}".fasta
-    # bcftools consensus -f "\${ASSEMBLY}/ref_seq.fasta" "\${VARIANT_CALLING}"/"\${SAMPLE}"_prot_variants_AF-"\${FREQ_CUTOFF}".vcf.gz -o "\${ASSEMBLY}"/"\${SAMPLE}"_prot_variants_AF-"\${FREQ_CUTOFF}".fasta
+    cat "\${ASSEMBLY}/ref_seq.fasta" | bcftools consensus -s - "\${VARIANT_CALLING}"/"\${SAMPLE}"_prot_variants_AF-"\${FREQ_CUTOFF}".vcf.gz -o "\${ASSEMBLY}"/"\${SAMPLE}"_prot_variants_AF-"\${FREQ_CUTOFF}".fasta"
+    # bcftools consensus -f "\${ASSEMBLY}/ref_seq.fasta" "\${VARIANT_CALLING}"/"\${SAMPLE}"_prot_variants_AF-"\${FREQ_CUTOFF}".vcf.gz -o "\${ASSEMBLY}"/"\${SAMPLE}"_prot_variants_AF-"\${FREQ_CUTOFF}".fasta"
     """
 
 }
 
 process mapping2 {
+    conda 'bioconda::minimap2=2.26 bioconda::samtools=1.13'
+
     input:
-    path out_path
-    path fq_path
-    path assembly_path
-    path ref_path
-    path vcf_path
-    path muts_path
-    path plots_path
-    path qc_path
+    path out_dir
     file indelqual_prot_bam
     file indelqual_prot_bam_indexed
     file prot_variants_vcf
@@ -183,20 +168,21 @@ process mapping2 {
     file prot_variants_AF05_fasta
 
     output:
-    file "${assembly_path}/${out_path.baseName}_reads_mapped_consensus.sam"
-    file "${assembly_path}/${out_path.baseName}_reads_mapped_consensus.bam"
-    
+    file "${out_dir}/assembly/${out_dir.baseName}_reads_mapped_consensus.sam"
+    file "${out_dir}/assembly/${out_dir.baseName}_reads_mapped_consensus.bam"
+
+
     script:
     """
-    DIR_SAMPLE=${out_path}
+    DIR_SAMPLE=${out_dir}
     SAMPLE=\$(basename \${DIR_SAMPLE})
-    ASSEMBLY=${assembly_path}
-    VARIANT_CALLING=${vcf_path}
-    FASTQ=${fq_path}
+    ASSEMBLY=${out_dir}/assembly
+    VARIANT_CALLING=${out_dir}/variant_calling
+    FASTQ=${out_dir}/fastq
     FREQ_CUTOFF=0.05
     FQ_R1="\${FASTQ}"/"\${SAMPLE}"_qc_R1.fastq.gz; FQ_R2="\${FASTQ}"/"\${SAMPLE}"_qc_R2.fastq.gz
-    time (minimap2 -ax sr "${prot_variants_AF05_fasta}" \$FQ_R1 \$FQ_R2 > \$ASSEMBLY/"\$SAMPLE"_reads_mapped_consensus.sam)
-    samtools view -bS \$ASSEMBLY/"\$SAMPLE"_reads_mapped_consensus.sam | samtools sort - -o \$ASSEMBLY/"\$SAMPLE"_reads_mapped_consensus.bam
+    time (minimap2 -ax sr "\${prot_variants_AF05_fasta}" \$FQ_R1 \$FQ_R2 > \${ASSEMBLY}/"\${SAMPLE}"_reads_mapped_consensus.sam)
+    samtools view -bS \${ASSEMBLY}/"\${SAMPLE}"_reads_mapped_consensus.sam | samtools sort - -o \${ASSEMBLY}/"\${SAMPLE}"_reads_mapped_consensus.bam
     """
 
 
@@ -204,48 +190,39 @@ process mapping2 {
 
 
 process read_depth {
+    conda 'bioconda::samtools=1.13'
+
     input:
-    path out_path
-    path fq_path
-    path assembly_path
-    path ref_path
-    path vcf_path
-    path muts_path
-    path plots_path
-    path qc_path
+    path out_dir
     file sam
     file bam
 
 
     output:
-    file "${assembly_path}/${out_path.baseName}_depth_consensus.tsv"
-    
+    file "${out_dir}/assembly/${out_dir.baseName}_depth_consensus.tsv"
+
+
     script:
     """
-    DIR_SAMPLE=${out_path}
+    DIR_SAMPLE=${out_dir}
     SAMPLE=\$(basename \${DIR_SAMPLE})
-    ASSEMBLY=${assembly_path}
-    VARIANT_CALLING=${vcf_path}
+    ASSEMBLY=${out_dir}/assembly
+    VARIANT_CALLING=${out_dir}/variant_calling
     FREQ_CUTOFF=0.05
     BAM2=${bam}
-    echo -e "ref\tpos\tdepth" > \$ASSEMBLY/"\$SAMPLE"_depth_consensus.tsv
-    samtools depth -a \$BAM2 >> \$ASSEMBLY/"\$SAMPLE"_depth_consensus.tsv
+    echo -e "ref\tpos\tdepth" > \${ASSEMBLY}/"\${SAMPLE}"_depth_consensus.tsv
+    samtools depth -a \$BAM2 >> \${ASSEMBLY}/"\${SAMPLE}"_depth_consensus.tsv
     """
 
 }
 
 process reads_qc_plot {
+    conda 'conda-forge::python=3.11 conda-forge::matplotlib=3.8 bioconda::pysam conda-forge::pandas conda-forge::seaborn conda-forge::biopython'
+
     input:
     file r1
     file r2
-    path out_path
-    path fq_path
-    path assembly_path
-    path ref_path
-    path vcf_path
-    path muts_path
-    path plots_path
-    path qc_path
+    path out_dir
     file ref_seq
     file ref_seq_fai
     file fqr1
@@ -254,12 +231,12 @@ process reads_qc_plot {
     file fqUPr2
 
     output:
-    file "${qc_path}/qc_metrics.csv"
-    file "${plots_path}/qc_metrics.svg"
+    file "${out_dir}/qc/qc_metrics.csv"
+    file "${out_dir}/plots/qc_metrics.svg"
+
 
     script:
     """
-    python3 $projectDir/bin/read_metrics.py --out-dir ${out_path} --r1 ${r1} --r2 ${r2} --sample ${out_path.baseName} --r1qc ${fqr1} --r1UPqc ${fqUPr1} --r2qc ${fqr2} --r2UPqc ${fqUPr2}
+    python3 $projectDir/bin/read_metrics.py --out-dir ${out_dir} --r1 ${r1} --r2 ${r2} --sample ${out_dir.baseName} --r1qc ${fqr1} --r1UPqc ${fqUPr1} --r2qc ${fqr2} --r2UPqc ${fqUPr2}
     """
 }
-
