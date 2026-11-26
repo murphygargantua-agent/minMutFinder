@@ -12,6 +12,7 @@
 - [🚀 How to Run](#-how-to-run-minmutfinder)
 - [⚙️ Arguments](#-arguments)
   - [📝 Notes](#-notes)
+- [📊 MultiQC Report](#-multiqc-report)
 - [🔏 License](#-license)
 - [🖊️ Citing minMutFinder](#-citing-minmutfinder)
 - [🔮 Future Work & Limitations](#-future-work-and-limitations)
@@ -153,6 +154,42 @@ Each sample subdirectory should contain a paired FASTQ set
 Per-sample outputs land in `<output_dir>/<sample>/`; merged tables
 `all_mutations.csv` and `all_qc_metrics.csv` are written to `<output_dir>`.
 Per-sample plots remain under each `<output_dir>/<sample>/plots/`.
+
+### MultiQC report
+
+Every run generates a consolidated MultiQC quality-control report:
+
+- **Manifest mode** (one Nextflow run, all samples): the report merges per-sample
+  `qc/qc_metrics.csv` tables, `fastp` JSON logs and `bcftools stats` reports into a
+  single `multiqc_report.html` under `<out_path>/multiqc_report/`.
+- **Single-sample mode** (`--r1/--r2`, or the per-sample runs launched by
+  `run_multi.sh`): one report per sample, under `<out_dir>/<sample>/multiqc_report/`.
+
+The per-sample QC metrics CSVs are converted to MultiQC custom-content format with
+`bin/qc_metrics_mqc.py` (wide table: `sample,reads_total,reads_filt_qc,...`), and the
+fastp/samtools/bcftools logs are produced inside `runMultiQC`
+(`modules/multiqc.nf`). The report configuration is in
+`minMutFinder-nf/multiqc_config.yaml`.
+
+### Synthetic test data
+
+`minMutFinder-nf/resources/synthetic/synth_R1.fq` + `synth_R2.fq` are small
+deterministic paired-end reads (2,000 read pairs, 150 bp) generated with `wgsim`
+from a single CDS contig of the CMV AD169 reference. They exercise the full
+end-to-end chain — trimmomatic → minimap2 → lofreq → bcftools → byProteinAnalysis
+→ MultiQC — on real data, and are intended for smoke-testing the pipeline without
+requiring a large dataset:
+
+```bash
+nextflow run minMutFinder-nf/minMutFinder.nf \
+  --manifest <(printf 'sample_name,r1,r2\nsynthetic,minMutFinder-nf/resources/synthetic/synth_R1.fq,minMutFinder-nf/resources/synthetic/synth_R2.fq') \
+  --ref_seq minMutFinder-nf/resources/cmv_cds.fasta \
+  --out_path out/synthetic-test
+```
+
+The synthetic reads carry known SNVs at RL1 positions 683, 700, 806 and 882
+(e.g. `C683G`, `C700A`, `C806G`, `G882C`), which the pipeline detects at ~50-100%
+allele frequency, so they also validate variant calling against ground truth.
 
 ### Custom FASTQ naming
 
