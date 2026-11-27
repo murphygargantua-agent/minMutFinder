@@ -18,7 +18,10 @@
 // Copyright (C) 2024 Respiratory Viruses Unit, Microbiology Department, Vall d’Hebron Hospital Universitari, Vall d’Hebron Institut de Recerca (VHIR), Vall d’Hebron Barcelona Hospital Campus, Passeig Vall d’Hebron 119-129, 08035 Barcelona, Spain
 
 process fastqProcessing {
-    conda 'bioconda::trimmomatic=0.39 bioconda::samtools=1.13'
+    // pin python=3.11: the trimmomatic conda wrapper is a Python script that uses
+    // f-strings, so an env built with an old Python dies with "SyntaxError" before
+    // it ever runs java; nextflow picks up whatever python is first in the env.
+    conda 'bioconda::trimmomatic=0.39 bioconda::samtools=1.13 conda-forge::python=3.11'
 
     input:
     path r1
