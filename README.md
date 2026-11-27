@@ -219,6 +219,18 @@ Expect one subdirectory per sample, each containing `{sample}_R1.fq.gz` and
 - `*_R1.*` + `*_R2.*` (any extension: `.fastq`, `.fq`, `.fq.gz`)
 - files may sit directly in `--inputReads` or one level down inside per-sample dirs
 
+Custom naming conventions are supported with `--r1_pattern` and `--r2_pattern`
+(ERE regexes matched against the filename, same as `run_multi.sh`):
+
+```bash
+nextflow run minMutFinder-nf/minMutFinder.nf \
+  --inputReads samples \
+  --r1_pattern '^.+_R1_001\.fastq$' \
+  --r2_pattern '^.+_R2_001\.fastq$' \
+  --ref_seq minMutFinder-nf/resources/cmv_cds.fasta \
+  --out_path out/scan-test
+```
+
 Outputs are merged into `all_mutations.csv` and `all_qc_metrics.csv` under `--out_path`:
 
 A consolidated MultiQC QC report is generated under `<out_path>/multiqc_report/`:

@@ -60,21 +60,36 @@ workflow {
   def out_dir = file(out_path); out_dir.mkdirs()
 
   // Scan mode: pair *_R1.* / *_R2.* FASTQ files by sample id, mirroring the
-  // real pipeline's --inputReads logic.
+  // real pipeline's --inputReads logic. Supports custom --r1_pattern/--r2_pattern.
   if (params.inputReads) {
     def inputReads = new File(params.inputReads).getCanonicalPath()
-    ch_samples = Channel.fromPath("$inputReads/{*,*/*}_R{1,2}*.fq*")
-      .filter { file -> file.toString().matches(/.*_R[12]\..*/) }
+    def r1_pattern = params.r1_pattern ? params.r1_pattern : '.*_R1\\..*'
+    def r2_pattern = params.r2_pattern ? params.r2_pattern : '.*_R2\\..*'
+
+    // Brace expansion {*,*/*} finds files directly in --inputReads or one level
+    // down inside per-sample dirs (e.g. samples/S1/synth_R1.fq).
+    // Sample id: filename prefix before the R1/R2 marker (flat layout), or the
+    // parent directory name (one level down inside a sample dir).
+    def r1_files = Channel.fromPath("$inputReads/{*,*/*}")
+      .filter { file -> file.getName().matches(r1_pattern) }
       .map { file -> [
           file.getParent().toString() == inputReads ?
-            file.getName().replaceAll(/_R[12]\..*/, '') : // flat: prefix as sample id
-            file.getParent().getName(),                   // nested: dir name as sample id
+            file.getName().replaceAll(/(_R1|_R2|_R1_|_R2_)\..*/, '') : // flat: prefix as sample id
+            file.getParent().getName(),                            // nested: dir name
           file.toString()
         ]
       }
-      .groupTuple()
-      .map { name, files -> [name, files[0], files[1]] }
+    def r2_files = Channel.fromPath("$inputReads/{*,*/*}")
+      .filter { file -> file.getName().matches(r2_pattern) }
+      .map { file -> [
+          file.getParent().toString() == inputReads ?
+            file.getName().replaceAll(/(_R1|_R2|_R1_|_R2_)\..*/, '') : // flat: prefix as sample id
+            file.getParent().getName(),                            // nested: dir name
+          file.toString()
+        ]
+      }
 
+    ch_samples = r1_files.join(r2_files)
     println "stub: scan mode with ${ch_samples.count()} sample(s)"
   } else if (params.manifest) {
     // Manifest mode: one row per sample -> create the per-sample output structure.

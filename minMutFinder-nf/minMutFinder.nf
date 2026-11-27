@@ -26,9 +26,47 @@ include { runMultiQC } from './modules/multiqc'
 def versionMessage() 
 {
 	log.info"""
-	 
+	
 	MINORITY MUTATION FINDER (minMutFinder) - Version: ${workflow.manifest.version} 
 	""".stripIndent()
+}
+
+// Check that all required Python helper scripts are present. The original minMutFinder
+// ships these in `bin/`; if they are missing the pipeline would fail with a cryptic
+// "No such file or directory" error from inside a process, which gives no clue about
+// what is actually wrong. This makes the failure explicit and tells the user where to
+// get the files.
+def checkScripts() {
+    def scripts = [
+        'bin/ref_check.py',
+        'bin/read_metrics.py',
+        'bin/by_protein_analysis.py',
+        'bin/viz_no_annotate.py',
+        'bin/annotate_and_viz.py'
+    ]
+    def missing = scripts.findAll { !file("$projectDir/$it").exists() }
+    return missing
+}
+
+def validateInputs() {
+    def missingScripts = checkScripts()
+    if (!missingScripts.isEmpty()) {
+        exit 1, """
+        minMutFinder is missing required Python helper scripts: ${missingScripts.join(', ')}
+
+        These files are not shipped with this repository. They come from the original
+        minMutFinder (Prats-Méndez I., VHIR) and must be placed in the `bin/` directory
+        of this project:
+
+            $projectDir/bin/ref_check.py
+            $projectDir/bin/read_metrics.py
+            $projectDir/bin/by_protein_analysis.py
+            $projectDir/bin/viz_no_annotate.py
+            $projectDir/bin/annotate_and_viz.py
+
+        Until they are present, the pipeline cannot run.
+        """.stripIndent()
+    }
 }
 
 def helpMessage() 
@@ -262,6 +300,11 @@ workflow {
         exit 0
     }
 
+    // Fail fast with a helpful message when the required Python helper scripts are
+    // missing, instead of dying later with an opaque "No such file or directory"
+    // from inside a process script.
+    validateInputs()
+
     //Creates working dir
     def workingpath = params.out_path
     def workingdir = file(workingpath)
@@ -309,24 +352,43 @@ Beginning of analysis:
             .map { row -> [row.sample_name, new File(row.r1).getCanonicalPath(), new File(row.r2).getCanonicalPath()] }
         manifestChannel.set { ch_samples }
     } else if (params.inputReads) {
-        // Scan mode: pair *_R1.* / *_R2.* FASTQ files by sample id.
+        // Scan mode: auto-pair forward/reverse FASTQ files by name.
+        // The default pairing convention mirrors run_multi.sh's find_pair():
+        //   *_R1.* + *_R2.* (any extension: .fastq, .fq, .fq.gz)
+        // Custom ERE patterns can be provided with --r1_pattern / --r2_pattern,
+        // e.g. '^.+_R1_001\.fastq$' for files with an underscore suffix.
+        def inputReads = new File(params.inputReads).getCanonicalPath()
+        def r1_pattern = params.r1_pattern ? params.r1_pattern : '.*_R1\\..*'
+        def r2_pattern = params.r2_pattern ? params.r2_pattern : '.*_R2\\..*'
+
         // Brace expansion {*,*/*} finds files directly in --inputReads or one level
         // down inside per-sample dirs (e.g. samples/S1/synth_R1.fq).
-        // Sample id is the filename prefix (flat) or the parent dir name (nested),
-        // so R1/R2 files of the same sample are grouped together.
-        def inputReads = new File(params.inputReads).getCanonicalPath()
-        def inputRawReads = Channel.fromPath("$inputReads/{*,*/*}_R{1,2}*.fq*")
-            .filter { file -> file.toString().matches(/.*_R[12]\..*/) }
+        // Sample id: filename prefix before the R1/R2 marker (flat layout), or the
+        // parent directory name (one level down inside a sample dir).
+        // Note: the suffix must be stripped regardless of what follows it (e.g.
+        // SampleA_R1_001.fastq -> SampleA, not SampleA_R1_001.fastq), otherwise
+        // the R1/R2 join never matches and the channel ends up empty.
+        def r1_files = Channel.fromPath("$inputReads/{*,*/*}")
+            .filter { file -> file.getName().matches(r1_pattern) }
             .map { file -> [
                 file.getParent().toString() == inputReads ?
-                    file.getName().replaceAll(/_R[12]\..*/, '') : // flat: prefix as sample id
-                    file.getParent().getName(),                   // nested: dir name as sample id
+                    file.getName().replaceAll(/(_R1|_R2|_R1_|_R2_).*/, '') : // flat: prefix as sample id
+                    file.getParent().getName(),                            // nested: dir name
                 file.toString()
               ]
             }
-            .groupTuple()
-            .map { name, files -> [name, files[0], files[1]] }
-        inputRawReads.set { ch_samples }
+        def r2_files = Channel.fromPath("$inputReads/{*,*/*}")
+            .filter { file -> file.getName().matches(r2_pattern) }
+            .map { file -> [
+                file.getParent().toString() == inputReads ?
+                    file.getName().replaceAll(/(_R1|_R2|_R1_|_R2_).*/, '') : // flat: prefix as sample id
+                    file.getParent().getName(),                            // nested: dir name
+                file.toString()
+              ]
+            }
+
+        // Join R1/R2 files by sample id.
+        r1_files.join(r2_files).set { ch_samples }
     } else {
         // Legacy single-sample mode: out_dir is the user-supplied out_path so the
         // per-sample naming behaviour (out_path.baseName) is preserved.
@@ -339,7 +401,11 @@ Beginning of analysis:
     // to every sample. Nextflow zips the fields of the channel element-wise so each
     // instance of the chain below gets one complete sample.
     ch_samples.map { name, r1, r2 ->
-        def out_dir = params.manifest ? new File(out_path, name).getCanonicalPath() : out_path
+        // All input modes must use a per-sample dir under out_path: if all samples
+        // share one directory (scan/legacy mode), their outputs collide on the same
+        // file names and overwrite each other. Manifest mode already did this; extend
+        // it to every mode so multi-sample runs produce one subdir per sample.
+        def out_dir = new File(out_path, name).getCanonicalPath()
         // Pre-create the per-sample dir: Nextflow symlinks path inputs into the work dir,
         // and process scripts can only mkdir through a symlink whose target exists.
         new File(out_dir).mkdirs()
