@@ -1,4 +1,0 @@
-Sample	0	1
-Synth00_prot_variants	(49.0, 0)	(110.0, 0)
-Synth01_prot_variants	(59.0, 0)	(88.0, 0)
-Synth02_prot_variants	(50.0, 0)	(109.0, 0)

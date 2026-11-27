@@ -1,4 +1,0 @@
-Sample	0
-Synth00_prot_variants	(0, None)
-Synth01_prot_variants	(0, None)
-Synth02_prot_variants	(0, None)

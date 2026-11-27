@@ -1,4 +1,0 @@
-Sample	C>G	G>T
-Synth00_prot_variants	1.0	1.0
-Synth01_prot_variants	1.0	1.0
-Synth02_prot_variants	1.0	1.0
