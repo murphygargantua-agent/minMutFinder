@@ -1,0 +1,4 @@
+sample_name,r1,r2
+SampleA,/home/user/cmv_analysis/SampleA_R1.fq.gz,/home/user/cmv_analysis/SampleA_R2.fq.gz
+SampleB,/home/user/cmv_analysis/SampleB_R1.fq.gz,/home/user/cmv_analysis/SampleB_R2.fq.gz
+SampleC,/home/user/cmv_analysis/SampleC_R1.fq.gz,/home/user/cmv_analysis/SampleC_R2.fq.gz

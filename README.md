@@ -38,7 +38,7 @@ Get a multi-sample run going in three steps:
 git clone https://github.com/murphygargantua-agent/minMutFinder.git
 cd minMutFinder
 
-# 2. Prepare a manifest CSV
+# 2. Prepare a manifest CSV — see minMutFinder-nf/samples.csv for an example
 cat > samples.csv << 'EOF'
 sample_name,r1,r2
 SampleA,/path/to/SampleA_R1.fq.gz,/path/to/SampleA_R2.fq.gz
@@ -55,6 +55,9 @@ nextflow run minMutFinder-nf/minMutFinder.nf \
 ```
 
 ### Scan mode (auto-pair by name)
+
+Point at a directory of paired FASTQ and the pipeline pairs `*_R1.*` / `*_R2.*`
+files automatically — no manifest needed:
 
 ```bash
 # 1. Clone the fork
@@ -75,16 +78,27 @@ nextflow run minMutFinder-nf/minMutFinder.nf \
   --out_path out/scan-test
 ```
 
-Outputs:
-- `out/<sample>/` — per-sample pipeline outputs + plots
-- `out/all_mutations.csv` — merged mutations table
-- `out/all_qc_metrics.csv` — merged QC table
-- `out/multiqc_report/` — consolidated MultiQC HTML report
+The naming convention matches `run_multi.sh`'s `find_pair`: any `*_R1.*` +
+`*_R2.*` pair (`.fastq`, `.fq`, `.fq.gz`, ...). Files may sit directly in
+`--inputReads` or one level down inside per-sample dirs:
 
-To smoke-test the orchestration without installing bioinformatics tools, swap in the stub pipeline:
+```
+samples/
+├── SampleA/
+│   ├── SampleA_R1.fq.gz    <- auto-paired with SampleA_R2.fq.gz
+│   └── SampleA_R2.fq.gz
+├── SampleB/
+│   ├── SampleB_R1.fq.gz
+│   └── SampleB_R2.fq.gz
+└── synth_R1.fq             <- flat layout: paired with synth_R2.fq
+    └── synth_R2.fq
+```
+
+To smoke-test the orchestration without installing bioinformatics tools, swap in
+the stub pipeline (uses the example manifest):
 
 ```bash
-nextflow run minMutFinder-nf/minMutFinder.nf --manifest samples.csv --ref_seq minMutFinder-nf/resources/cmv_cds.fasta --pipeline minMutFinder-nf/minMutFinder_stub.nf
+nextflow run minMutFinder-nf/minMutFinder.nf --manifest minMutFinder-nf/samples.csv --ref_seq minMutFinder-nf/resources/cmv_cds.fasta --pipeline minMutFinder-nf/minMutFinder_stub.nf
 ```
 
 > **Note**: `run_multi.sh` (the legacy bash orchestrator) is still supported for
@@ -179,10 +193,10 @@ nextflow run minMutFinder-nf/minMutFinder.nf \
 
 The manifest CSV (`samples.csv`) must have a header row and the columns:
 `sample_name`, `r1`, `r2`. Paths may be relative (resolved against the CWD) or
-absolute.
+absolute. An example is provided at `minMutFinder-nf/samples.csv`:
 
-```bash
-// samples.csv
+```csv
+// samples.csv (see minMutFinder-nf/samples.csv for the full file)
 sample_name,r1,r2
 SampleA,/path/to/SampleA_R1.fq.gz,/path/to/SampleA_R2.fq.gz
 SampleB,/path/to/SampleB_R1.fq.gz,/path/to/SampleB_R2.fq.gz
