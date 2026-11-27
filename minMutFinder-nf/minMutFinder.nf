@@ -21,6 +21,7 @@ include { dirCreator; refCheck } from './modules/initialization'
 include { fastqProcessing; mapping1; variant_calling; read_depth; mapping2; reads_qc_plot } from './modules/from_fq_to_vcf'
 include { byProteinAnalysis; protNames } from './modules/by_protein'
 include { waitForOutMuts; vizNoAnnot; annotateAndViz } from './modules/viz_and_annotate'
+include { runMultiQC } from './modules/multiqc'
 
 def versionMessage() 
 {
@@ -124,6 +125,10 @@ SampleB,/path/to/SampleB_R1.fq.gz,/path/to/SampleB_R2.fq.gz
 
 Per-sample outputs land in `<out_path>/<sample_name>/`; merged tables
 `all_mutations.csv` and `all_qc_metrics.csv` are written to `<out_path>`.
+
+A consolidated MultiQC QC report is generated under `<out_path>/multiqc_report/`:
+it merges the per-sample `qc/qc_metrics.csv` tables, `fastp` JSON logs and
+`bcftools stats` reports into one HTML report.
 
 To smoke-test the orchestration without installing bioinformatics tools, swap in the stub pipeline:
 
@@ -305,6 +310,9 @@ Beginning of analysis:
     def ch_r1 = ch.map { it[1] }
     def ch_r2 = ch.map { it[2] }
     def ch_ref_seq = ch.map { it[3] }
+    // The per-sample output dirs are reused by the MultiQC step at the end of the
+    // workflow, so assign them to a value channel that can be subscribed to more
+    // than once by the processes below.
     def ch_out_dir = ch.map { it[4] }
 
     // Create the per-sample output directories.
@@ -357,7 +365,17 @@ Beginning of analysis:
     // ---------------------------------------------------------------------------
     def all_muts = final_muts.collect()
     def all_qc = per_qc.collect()
+    // Collect from `per_qc` (produced by byProteinAnalysis) so runMultiQC waits
+    // for every per-sample process to finish before it starts. `per_qc` emits a
+    // list per CDS; some CDSs produce no output, so filter nulls and map each QC
+    // metrics file path back to its per-sample dir, then dedupe.
+    def all_dirs = per_qc.filter { it != null }.map {
+        def f = it instanceof List ? it[0] : it
+        f == null ? null : f.getParent().getParent()
+    }.filter { it != null }.unique().collect()
 
     if (all_muts) { mergeMutations(all_muts, out_path) }
     if (all_qc) { mergeQc(all_qc, out_path) }
+    // Aggregate the per-sample QC logs and metrics into a single MultiQC report.
+    if (all_dirs) { runMultiQC(all_dirs, out_path) }
 }

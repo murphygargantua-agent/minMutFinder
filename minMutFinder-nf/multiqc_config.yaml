@@ -1,0 +1,26 @@
+# MultiQC configuration for minMutFinder.
+#
+# MultiQC runs every module that finds matching log files in the scanned
+# directories, so no module list is needed here. This config only sets the
+# report-level appearance and points at the per-sample QC metrics files that
+# the pipeline writes (``*_mqc.csv``).
+
+title: "minMutFinder - QC Report"
+comment: "MultiQC report of the minMutFinder minority mutation analysis. Each sample's QC metrics, read mapping and variant calling logs are merged here."
+
+# Keep the default template; use 'simple' for a lighter report or 'gathered' to
+# only show the general statistics table.
+template: default
+
+# Custom content section configuration - the per-sample ``*_mqc.csv`` files are
+# found automatically by MultiQC's custom_content file search pattern
+# (``.+_mqc\\.(csv|txt|json|...)``) and parsed with the YAML header that
+# ``bin/qc_metrics_mqc.py`` writes.
+custom_data:
+    minmutfinder_qc:
+        id: minmutfinder_qc
+        section_name: minMutFinder QC metrics
+        description: Read counts from the minMutFinder QC step
+        plot_type: table
+        pconfig:
+            title: QC Metrics

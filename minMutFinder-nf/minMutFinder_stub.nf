@@ -13,6 +13,35 @@ params {
   ref_seq    = false
   annotate   = false
   syn_muts   = "no"
+  manifest   = ""
+}
+
+process writeSampleFiles {
+  tag "${sample_name}"
+  input:
+  path out_dir
+  path ref_seq
+  path qc_csv
+  path muts_csv
+  val sample_name
+
+  output:
+  path "${out_dir}/qc/qc_metrics.csv"
+  path "${out_dir}/mutations/${sample_name}_mutations.csv"
+  path "${out_dir}/assembly/ref_seq.fasta"
+
+  script:
+  """
+  echo 'sample,test,score' > ${out_dir}/qc/qc_metrics.csv
+  echo '${sample_name},reads_total,1000' >> ${out_dir}/qc/qc_metrics.csv
+  echo '${sample_name},reads_filt_qc,800' >> ${out_dir}/qc/qc_metrics.csv
+
+  echo 'SampleID,Gene,Mutation_type,Aa_change,Type_of_aa_change,Nt_mutation,Mutation_frequency' > ${out_dir}/mutations/${sample_name}_mutations.csv
+  echo '${sample_name},UL1,missense,A,gain,A,1.0' >> ${out_dir}/mutations/${sample_name}_mutations.csv
+  echo '${sample_name},UL2,synonymous,S,loss,S,0.5' >> ${out_dir}/mutations/${sample_name}_mutations.csv
+
+  cp ${ref_seq} ${out_dir}/assembly/ref_seq.fasta
+  """
 }
 
 def versionMessage() {
@@ -29,33 +58,54 @@ workflow {
 
   def out_path = params.out_path
   def out_dir = file(out_path); out_dir.mkdirs()
-  ["fastq","assembly","variant_calling","mutations","plots","qc"].each { subdir ->
-    file("$out_path/$subdir").mkdirs()
+
+  // Manifest mode: one row per sample -> create the per-sample output structure.
+  if (params.manifest) {
+    Channel.fromPath(params.manifest)
+        .splitCsv(header: true, quote: '"')
+        .map { row -> [row.sample_name, new File(row.r1).getCanonicalPath(), new File(row.r2).getCanonicalPath()] }
+        .set { ch_samples }
+
+    // Pre-create the per-sample output dirs and submit the file-writing process.
+    ch_samples.map { name, r1, r2 ->
+      def sample_dir = file("$out_path/$name"); sample_dir.mkdirs()
+      ["fastq","assembly","variant_calling","mutations","plots","qc"].each { subdir ->
+        file("$sample_dir/$subdir").mkdirs()
+      }
+      sample_dir
+    }.set { ch_out_dirs }
+
+    def ch_ref_seqs = ch_samples.map { name, r1, r2 -> params.ref_seq }
+    def ch_qc_csvs = ch_samples.map { name, r1, r2 -> "$out_path/$name/qc/qc_metrics.csv" }
+    def ch_muts_csvs = ch_samples.map { name, r1, r2 -> "$out_path/$name/mutations/${name}_mutations.csv" }
+
+    writeSampleFiles(ch_out_dirs, ch_ref_seqs, ch_qc_csvs, ch_muts_csvs, ch_samples.map { name, r1, r2 -> name })
+
+    println "stub: manifest mode with ${ch_samples.count()} sample(s)"
+  } else {
+    // Legacy single-sample mode: out_dir is the user-supplied out_path so the
+    // per-sample naming behaviour (out_path.baseName) is preserved.
+    def r1 = params.r1 && !params.r1.equals(false) ? new File(params.r1).getCanonicalPath() : null
+    def r2 = params.r2 && !params.r2.equals(false) ? new File(params.r2).getCanonicalPath() : null
+    Channel.of([null, r1, r2]).set { ch_samples }
+
+    def SAMPLE = new File(out_path).getName()
+    ["fastq","assembly","variant_calling","mutations","plots","qc"].each { subdir ->
+      file("$out_path/$subdir").mkdirs()
+    }
+    // single sample: out_dir is the user-supplied out_path
+    writeSampleFiles(
+      file(out_path), params.ref_seq, "$out_path/qc/qc_metrics.csv",
+      "$out_path/mutations/${SAMPLE}_mutations.csv", SAMPLE)
   }
-
-  // copy reference + index
-  def ref = file(params.ref_seq)
-  "cp ${ref} ${out_path}/assembly/ref_seq.fasta".execute()
-  "samtools faidx ${out_path}/assembly/ref_seq.fasta".execute()
-
-  def SAMPLE = new File(out_path).getName()
-  def muts_csv = "$out_path/mutations/${SAMPLE}_mutations.csv"
-  def qc_csv = "$out_path/qc/qc_metrics.csv"
-
-  def bash = ["/bin/bash", "-c"]
-  def qcmd = "echo 'sample,test,score' > $qc_csv && echo '${SAMPLE},qc_test,0.99' >> $qc_csv"
-  (bash + [qcmd]).execute()
-  def mcmd = "echo 'SampleID,Gene,Mutation_type,Aa_change,Type_of_aa_change,Nt_mutation,Mutation_frequency' > $muts_csv && echo '${SAMPLE},UL1,missense,A,gain,A,1.0' >> $muts_csv && echo '${SAMPLE},UL2,synonymous,S,loss,S,0.5' >> $muts_csv"
-  (bash + [mcmd]).execute()
 
   if (params.syn_muts == "yes") {
-    (bash + ["echo '${SAMPLE},UL3,missense,G,gain,G,0.8' >> $muts_csv"]).execute()
+    println "stub: syn_muts=yes (would append UL3 mutation)"
   }
-
   if (params.annotate) {
     def ann = file(params.annotate)
     if (ann.exists()) {
-      (bash + ["echo annotated >> $muts_csv"]).execute()
+      println "stub: annotate=$ann"
     }
   }
 }

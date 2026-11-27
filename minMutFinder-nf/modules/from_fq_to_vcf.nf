@@ -144,7 +144,7 @@ process variant_calling {
     VCF_FILE_CUTOFF="\${VARIANT_CALLING}/\${SAMPLE}_prot_variants_AF-\${FREQ_CUTOFF}.vcf"
     bgzip -c "\${VARIANT_CALLING}/\${SAMPLE}_prot_variants_AF-\${FREQ_CUTOFF}.vcf" > "\${VARIANT_CALLING}/\${SAMPLE}_prot_variants_AF-\${FREQ_CUTOFF}.vcf.gz"
     bcftools index \${VARIANT_CALLING}/"\${SAMPLE}"_prot_variants_AF-"\${FREQ_CUTOFF}".vcf.gz
-    cat "\${ASSEMBLY}/ref_seq.fasta" | bcftools consensus -s - "\${VARIANT_CALLING}"/"\${SAMPLE}"_prot_variants_AF-"\${FREQ_CUTOFF}".vcf.gz -o "\${ASSEMBLY}"/"\${SAMPLE}"_prot_variants_AF-"\${FREQ_CUTOFF}".fasta"
+    cat "\${ASSEMBLY}/ref_seq.fasta" | bcftools consensus \${VARIANT_CALLING}/\${SAMPLE}_prot_variants_AF-\${FREQ_CUTOFF}.vcf.gz -o \${ASSEMBLY}/\${SAMPLE}_prot_variants_AF-\${FREQ_CUTOFF}.fasta
     # bcftools consensus -f "\${ASSEMBLY}/ref_seq.fasta" "\${VARIANT_CALLING}"/"\${SAMPLE}"_prot_variants_AF-"\${FREQ_CUTOFF}".vcf.gz -o "\${ASSEMBLY}"/"\${SAMPLE}"_prot_variants_AF-"\${FREQ_CUTOFF}".fasta"
     """
 
@@ -181,7 +181,7 @@ process mapping2 {
     FASTQ=${out_dir}/fastq
     FREQ_CUTOFF=0.05
     FQ_R1="\${FASTQ}"/"\${SAMPLE}"_qc_R1.fastq.gz; FQ_R2="\${FASTQ}"/"\${SAMPLE}"_qc_R2.fastq.gz
-    time (minimap2 -ax sr "\${prot_variants_AF05_fasta}" \$FQ_R1 \$FQ_R2 > \${ASSEMBLY}/"\${SAMPLE}"_reads_mapped_consensus.sam)
+    time (minimap2 -ax sr "${prot_variants_AF05_fasta}" \$FQ_R1 \$FQ_R2 > \${ASSEMBLY}/"\${SAMPLE}"_reads_mapped_consensus.sam)
     samtools view -bS \${ASSEMBLY}/"\${SAMPLE}"_reads_mapped_consensus.sam | samtools sort - -o \${ASSEMBLY}/"\${SAMPLE}"_reads_mapped_consensus.bam
     """
 

@@ -175,7 +175,7 @@ if grep(VCF_FILE_CUTOFF, header, 'bool'):
 
     if len(q_df) == len(qc_metrics_protein_file.columns):
         qc_metrics_protein_file.loc[len(qc_metrics_protein_file)] = q_df
-    qc_metrics_protein_file.to_csv(QC_DIR+'/'+header+'_qc_metrics.csv', sep=',', index=False)
+    qc_metrics_protein_file.to_csv(QC_DIR+'/'+SAMPLE+'_'+header+'_qc_metrics.csv', sep=',', index=False)
 
     print('\nBeggining analyisis for protein '+header+'\n')
     vcf_header = grep(VCF_FILE_CUTOFF, '#C', 'text').replace('\n', '').replace('#', '').split('\t')
