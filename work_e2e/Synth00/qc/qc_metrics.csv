@@ -1,0 +1,4 @@
+sample,test,score
+Synth00,reads_total,0
+Synth00,reads_filt_qc,640
+Synth00,reads_filt_qc_paired,640

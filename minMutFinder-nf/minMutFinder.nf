@@ -17,11 +17,15 @@
 //
 // Copyright (C) 2024 Respiratory Viruses Unit, Microbiology Department, Vall d’Hebron Hospital Universitari, Vall d’Hebron Institut de Recerca (VHIR), Vall d’Hebron Barcelona Hospital Campus, Passeig Vall d’Hebron 119-129, 08035 Barcelona, Spain
 
-include { dirCreator; refCheck } from './modules/initialization'
-include { ref_faidx; trimmomatic_qc; mapping1; lofreq_variant_calling; bcftools_consensus; read_depth; mapping2; reads_qc_plot } from './modules/from_fq_to_vcf'
-include { byProteinAnalysis; protNames } from './modules/by_protein'
-include { waitForOutMuts; vizNoAnnot; annotateAndViz } from './modules/viz_and_annotate'
+include { create_dirs; check_ref } from './modules/initialization'
+include { ref_faidx; trimmomatic_qc; map_to_reference; variant_calling; consensus_building; consensus_depth; map_to_consensus; qc_metrics } from './modules/from_fq_to_vcf'
+include { protein_analysis; prot_names } from './modules/by_protein'
+include { wait_for_out_muts; visualize_no_annotate; annotateAndViz } from './modules/viz_and_annotate'
 include { runMultiQC } from './modules/multiqc'
+
+
+
+
 
 def versionMessage() 
 {
@@ -241,7 +245,7 @@ We're always happy to help!
 - [Nextflow](https://www.nextflow.io/)
 - [Python](https://www.python.org/)
 - [Bioconda](https://bioconda.github.io/)
-- [Minimap2](https://github.com/lh3/minimap2)
+- [BWA-MEM2](https://github.com/bwa-mem2/bwa-mem2)
 - [Trimmomatic](http://www.usadellab.org/cms/?page=trimmomatic)
 - [Lofreq](https://csb5.github.io/lofreq/)
 - [Bcftools](http://samtools.github.io/bcftools/bcftools.html)
@@ -250,7 +254,7 @@ We're always happy to help!
 """
 }
 
-process mergeMutations {
+process merge_mutations {
     input:
     path muts_csv
     path out_root
@@ -269,7 +273,7 @@ process mergeMutations {
     """
 }
 
-process mergeQc {
+process merge_qc {
     input:
     path qc_csv
     path out_root
@@ -424,8 +428,8 @@ Beginning of analysis:
     def ch_out_dir = ch.map { it[4] }
 
     // Create the per-sample output directories.
-    dirCreator(ch_out_dir)
-    refCheck(ref_seq)
+    create_dirs(ch_out_dir)
+    check_ref(ref_seq)
 
     // ---------------------------------------------------------------------------
     // Per-sample pipeline chain. Nextflow fans out each process once per sample
@@ -437,39 +441,92 @@ Beginning of analysis:
 
     def (qR1, qR2, qR1u, qR2u) = trimmomatic_qc(ch_r1, ch_r2, ch_out_dir)
 
-    reads_qc_plot(ch_r1, ch_r2, ch_out_dir, ch_ref_seq, rfasta_fai, qR1, qR2, qR1u, qR2u)
+    qc_metrics(ch_r1, ch_r2, ch_out_dir, ch_ref_seq, rfasta_fai, qR1, qR2, qR1u, qR2u)
 
-    def (map_sam, map_bam) = mapping1(ch_r1, ch_r2, ch_ref_seq, ch_out_dir, rfasta_fai, qR1, qR2, qR1u, qR2u)
+    def map_out = map_to_reference(ch_r1, ch_r2, ch_ref_seq, ch_out_dir, rfasta_fai, qR1, qR2, qR1u, qR2u)
 
-    // lofreq does variant calling (bam/sam/vcf); bcftools does consensus/AF filtering.
-    def (v_bam, v_bam_bai, v_vcf, v_sam, v_samfile) = lofreq_variant_calling(
-        ch_out_dir, map_sam, map_bam)
+    // ---------------------------------------------------------------------------
+    // ALIGNMENT FIX (CRITICAL): process-output channels emit values in *completion
+    // order*, which is NOT the same as the value channel above. Nextflow pairs paired
+    // channels element-wise by index, so a mismatch silently cross-wires whole samples.
+    // The processes now emit [sample_name, path] tuples (keyed on out_dir.baseName), so
+    // .join() aligns them by sample: one tuple per sample with every value in the same
+    // slot. Splitting back into individual channels guarantees alignment — no sorting
+    // required.
+    // ---------------------------------------------------------------------------
 
-    def (v_vcf_gz, v_vcf_gz_csi, v_af05_vcf, v_af05_vcf_gz, v_af05_vcf_gz_csi, v_af05_fasta) = bcftools_consensus(
-        ch_out_dir, v_vcf)
+    // map_to_reference outputs are [sample_name, path] tuples keyed on out_dir.baseName, so
+    // they can be joined directly with the out_dir channel (also keyed by sample).
+    def map_sam = map_out[0]
+    def map_bam = map_out[1]
 
-    def (cons_sam, cons_bam) = mapping2(
-        ch_out_dir, v_bam, v_bam_bai, v_vcf, v_sam, v_samfile, v_vcf_gz, v_vcf_gz_csi,
-        v_af05_vcf, v_af05_vcf_gz, v_af05_vcf_gz_csi, v_af05_fasta)
+    // Stage 1: join out_dir + map_to_reference outputs (both keyed by sample) and extract
+    // plain paths for the process call. `ch_out_dir` values are canonical path strings,
+    // so take the last segment as the sample name (same key the processes use).
+    def aligned1 = ch_out_dir.map { [it.tokenize('/').last(), it] }.join(map_sam).join(map_bam)
+    def a_out_dir = aligned1.map { it[1] }
+    def a_map_sam = aligned1.map { it[2] }
+    def a_map_bam = aligned1.map { it[3] }
 
-    def depth_tsv = read_depth(ch_out_dir, map_sam, map_bam)
+    def variant_calling_out = variant_calling(a_out_dir, a_map_sam, a_map_bam)
 
-    def prot_names = protNames(
-        ch_out_dir, v_bam, v_bam_bai, v_vcf, v_sam, v_samfile, v_vcf_gz, v_vcf_gz_csi,
-        v_af05_vcf, v_af05_vcf_gz, v_af05_vcf_gz_csi, v_af05_fasta)
+    // Stage 2: join all lofreq outputs (already tuples keyed by sample) with the
+    // out_dir channel as base so every join is ordered by the manifest/sample key.
+    def base = ch_out_dir.map { [it.tokenize('/').last(), it] }
+    def aligned_lofreq = base.join(
+        variant_calling_out[0]).join(
+        variant_calling_out[1]).join(
+        variant_calling_out[2]).join(
+        variant_calling_out[3]).join(
+        variant_calling_out[4])
 
-    def (mut_csv, per_qc, per_depth) = byProteinAnalysis(
-        ch_out_dir, ch_ref_seq, prot_names, depth_tsv)
+    def a_v_bam   = aligned_lofreq.map { it[2] }
+    def a_v_bam_bai = aligned_lofreq.map { it[3] }
+    def a_v_vcf   = aligned_lofreq.map { it[4] }
+    def a_v_sam   = aligned_lofreq.map { it[5] }
+    def a_v_samfile = aligned_lofreq.map { it[6] }
 
-    def final_muts = waitForOutMuts(
-        ch_out_dir, v_bam, v_bam_bai, v_vcf, v_sam, v_samfile, v_vcf_gz, v_vcf_gz_csi,
-        v_af05_vcf, v_af05_vcf_gz, v_af05_vcf_gz_csi, v_af05_fasta,
+    def consensus_building_out = consensus_building(a_out_dir, a_v_vcf)
+
+    // Stage 3: join all bcftools outputs with the base channel, then extract plain paths.
+    def aligned_bcftools = base.join(
+        consensus_building_out[0]).join(
+        consensus_building_out[1]).join(
+        consensus_building_out[2]).join(
+        consensus_building_out[3]).join(
+        consensus_building_out[4]).join(
+        consensus_building_out[5])
+
+    def a_v_vcf_gz   = aligned_bcftools.map { it[2] }
+    def a_v_vcf_gz_csi = aligned_bcftools.map { it[3] }
+    def a_v_af05_vcf   = aligned_bcftools.map { it[4] }
+    def a_v_af05_vcf_gz   = aligned_bcftools.map { it[5] }
+    def a_v_af05_vcf_gz_csi = aligned_bcftools.map { it[6] }
+    def a_v_af05_fasta = aligned_bcftools.map { it[7] }
+
+    // All downstream processes get plain paths from the aligned channels.
+    def (cons_sam, cons_bam) = map_to_consensus(
+        a_out_dir, a_v_bam, a_v_bam_bai, a_v_vcf, a_v_sam, a_v_samfile, a_v_vcf_gz, a_v_vcf_gz_csi,
+        a_v_af05_vcf, a_v_af05_vcf_gz, a_v_af05_vcf_gz_csi, a_v_af05_fasta)
+
+    def depth_tsv = consensus_depth(a_out_dir, a_map_sam, a_map_bam)
+
+    def proteins = prot_names(
+        a_out_dir, a_v_bam, a_v_bam_bai, a_v_vcf, a_v_sam, a_v_samfile, a_v_vcf_gz, a_v_vcf_gz_csi,
+        a_v_af05_vcf, a_v_af05_vcf_gz, a_v_af05_vcf_gz_csi, a_v_af05_fasta)
+
+    def (mut_csv, per_qc, per_depth) = protein_analysis(
+        a_out_dir, ch_ref_seq, proteins, depth_tsv)
+
+    def final_muts = wait_for_out_muts(
+        a_out_dir, a_v_bam, a_v_bam_bai, a_v_vcf, a_v_sam, a_v_samfile, a_v_vcf_gz, a_v_vcf_gz_csi,
+        a_v_af05_vcf, a_v_af05_vcf_gz, a_v_af05_vcf_gz_csi, a_v_af05_fasta,
         mut_csv, per_qc, per_depth)
 
     if ( annotate ){
         annotateAndViz(ch_out_dir, ch_ref_seq, final_muts, annotate, params.syn_muts)
     } else {
-        vizNoAnnot(ch_out_dir, ch_ref_seq, final_muts, params.syn_muts)
+        visualize_no_annotate(ch_out_dir, ch_ref_seq, final_muts, params.syn_muts)
     }
 
     // ---------------------------------------------------------------------------
@@ -480,7 +537,7 @@ Beginning of analysis:
     // ---------------------------------------------------------------------------
     def all_muts = final_muts.collect()
     def all_qc = per_qc.collect()
-    // Collect from `per_qc` (produced by byProteinAnalysis) so runMultiQC waits
+    // Collect from `per_qc` (produced by `protein_analysis`) so runMultiQC waits
     // for every per-sample process to finish before it starts. `per_qc` emits a
     // list per CDS; some CDSs produce no output, so filter nulls and map each QC
     // metrics file path back to its per-sample dir, then dedupe.
@@ -489,8 +546,9 @@ Beginning of analysis:
         f == null ? null : f.getParent().getParent()
     }.filter { it != null }.unique().collect()
 
-    if (all_muts) { mergeMutations(all_muts, out_path) }
-    if (all_qc) { mergeQc(all_qc, out_path) }
+    if (all_muts) { merge_mutations(all_muts, out_path) }
+    if (all_qc) { merge_qc(all_qc, out_path) }
     // Aggregate the per-sample QC logs and metrics into a single MultiQC report.
     if (all_dirs) { runMultiQC(all_dirs, out_path) }
 }
+

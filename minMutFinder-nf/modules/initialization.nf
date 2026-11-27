@@ -17,7 +17,7 @@
 //
 // Copyright (C) 2024 Respiratory Viruses Unit, Microbiology Department, Vall d’Hebron Hospital Universitari, Vall d’Hebron Institut de Recerca (VHIR), Vall d’Hebron Barcelona Hospital Campus, Passeig Vall d’Hebron 119-129, 08035 Barcelona, Spain
 
-process dirCreator {
+process create_dirs {
 
     input:
     path out_dir
@@ -57,8 +57,8 @@ process dirCreator {
 }
 
 
-process refCheck {
-    conda 'conda-forge::python=3.11'
+process check_ref {
+    conda 'conda-forge::python'
 
     input:
     val ref_seq

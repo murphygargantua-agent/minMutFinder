@@ -1,0 +1,4 @@
+Sample	Bcftools	HTSlib	Samtools	fastp
+Bcftools	1.15.1	1.21		
+Samtools		1.21	1.13	
+fastp				0.24.0

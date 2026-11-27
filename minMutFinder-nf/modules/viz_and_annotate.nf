@@ -17,7 +17,7 @@
 //
 // Copyright (C) 2024 Respiratory Viruses Unit, Microbiology Department, Vall d’Hebron Hospital Universitari, Vall d’Hebron Institut de Recerca (VHIR), Vall d’Hebron Barcelona Hospital Campus, Passeig Vall d’Hebron 119-129, 08035 Barcelona, Spain
 
-process waitForOutMuts {
+process wait_for_out_muts {
     input:
     path out_dir
     file indelqual_prot_bam
@@ -56,8 +56,8 @@ process waitForOutMuts {
     """
 }
 
-process vizNoAnnot {
-    conda 'conda-forge::python=3.11 conda-forge::pandas conda-forge::numpy conda-forge::plotly conda-forge::biopython'
+process visualize_no_annotate {
+    conda 'conda-forge::python conda-forge::pandas conda-forge::numpy conda-forge::plotly conda-forge::biopython'
 
     input:
     path out_dir
@@ -75,7 +75,7 @@ process vizNoAnnot {
 }
 
 process annotateAndViz {
-    conda 'conda-forge::python=3.11 conda-forge::pandas conda-forge::numpy conda-forge::plotly conda-forge::biopython'
+    conda 'conda-forge::python conda-forge::pandas conda-forge::numpy conda-forge::plotly conda-forge::biopython'
 
     input:
     path out_dir

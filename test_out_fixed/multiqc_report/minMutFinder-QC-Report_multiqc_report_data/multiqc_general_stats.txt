@@ -1,0 +1,10 @@
+Sample	bcftools_stats-number_of_records	bcftools_stats-number_of_SNPs	bcftools_stats-number_of_indels	bcftools_stats-tstv	bcftools_stats-number_of_MNPs	bcftools_stats-number_of_multiallelic_sites	bcftools_stats-number_of_multiallelic_SNP_sites	samtools_stats-error_rate	samtools_stats-non_primary_alignments	samtools_stats-reads_mapped	samtools_stats-reads_mapped_percent	samtools_stats-reads_properly_paired_percent	samtools_stats-reads_MQ0_percent	samtools_stats-raw_total_sequences	samtools_stats-insert_size_average	fastp-pct_duplication	fastp-after_filtering_q30_rate	fastp-after_filtering_q30_bases	fastp-filtering_result_passed_filter_reads	fastp-after_filtering_gc_content	fastp-pct_surviving_reads	fastp-pct_surviving_bases	fastp-pct_adapter	fastp-before_filtering_read1_mean_length	fastp-before_filtering_read2_mean_length
+Synth00_prot_variants	2	2	0	0.0	0	0	0																		
+Synth00_qc																7.187499999999999	100.0	0.096	0.0006399999999999999	64.2875	100.0	100.0	0.0	150.0	150.0
+Synth00_samtools_stats								0.019791669999999997	0.0	0.0006399999999999999	100.0	100.0	0.0	0.0006399999999999999	150.0										
+Synth01_prot_variants	2	2	0	0.0	0	0	0																		
+Synth01_qc																6.5625	100.0	0.096	0.0006399999999999999	64.226	100.0	100.0	0.0	150.0	150.0
+Synth01_samtools_stats								0.02291667	0.0	0.0006399999999999999	100.0	100.0	0.0	0.0006399999999999999	150.0										
+Synth02_prot_variants	2	2	0	0.0	0	0	0																		
+Synth02_qc																5.9375	100.0	0.096	0.0006399999999999999	64.7354	100.0	100.0	0.0	150.0	150.0
+Synth02_samtools_stats								0.025	0.0	0.0006399999999999999	100.0	100.0	0.0	0.0006399999999999999	150.0										

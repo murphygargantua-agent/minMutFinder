@@ -1,0 +1,4 @@
+SampleID,Gene,Mutation_type,Aa_change,Type_of_aa_change,Nt_mutation,Mutation_frequency
+Synth00,UL97|NC_006273.2,MUTATION,G166C,Special_case --> Special_case,G496T,0.105263
+Synth01,UL97|NC_006273.2,MUTATION,T154S,"No_Change, stayed Polar_non_charged",C461G,0.083333
+Synth01,UL97|NC_006273.2,MUTATION,G166C,Special_case --> Special_case,G496T,0.051724

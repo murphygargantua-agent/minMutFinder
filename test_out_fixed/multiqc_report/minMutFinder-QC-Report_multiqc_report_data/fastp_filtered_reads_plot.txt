@@ -1,0 +1,4 @@
+Sample	Passed Filter	Low Quality	Too Many N	Low Complexity	Too Short	Too Long
+Synth00_qc	640.0	0.0	0.0	nan	0.0	0.0
+Synth01_qc	640.0	0.0	0.0	nan	0.0	0.0
+Synth02_qc	640.0	0.0	0.0	nan	0.0	0.0

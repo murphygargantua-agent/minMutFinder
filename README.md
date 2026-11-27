@@ -258,7 +258,7 @@ fastp/samtools/bcftools logs are produced inside `runMultiQC`
 `minMutFinder-nf/resources/synthetic/synth_R1.fq` + `synth_R2.fq` are small
 deterministic paired-end reads (2,000 read pairs, 150 bp) generated with `wgsim`
 from a single CDS contig of the CMV AD169 reference. They exercise the full
-end-to-end chain — trimmomatic → minimap2 → lofreq → bcftools → byProteinAnalysis
+end-to-end chain — trimmomatic → minimap2 → lofreq → bcftools → protein_analysis
 → MultiQC — on real data, and are intended for smoke-testing the pipeline without
 requiring a large dataset:
 
@@ -326,7 +326,7 @@ discovery) without needing the real bioinformatics tools.
 
 This multi-CDS pipeline and multi-sample orchestration were validated end-to-end:
 
-- **Multi-CDS processing** (`byProteinAnalysis`): verified with the CMV2 sample
+- **Multi-CDS processing** (`protein_analysis`): verified with the CMV2 sample
   (`r1.fq` + `r2.fq`, 2,696 read pairs) against the AD169 CMV GenBank CDS reference
   (`resources/cmv_cds.fasta`, 8 drug-target CDSs: UL54, UL56, UL89, UL91, UL92,
   UL93, UL94, UL97). The pipeline processes ALL 8 CDSs, producing per-CDS
@@ -345,7 +345,7 @@ This multi-CDS pipeline and multi-sample orchestration were validated end-to-end
 
 - **Bug fixes**: the `csv.reader(delimiter="\n")` incompatibility with newer
   Python was replaced with manual tab-splitting; the `samfile_list` loop was fixed
-  to use the pre-split list; the `byProteinAnalysis` process now iterates over all
+  to use the pre-split list; the `protein_analysis` process now iterates over all
   CDSs in `prot_names.txt` via a bash loop (restoring the original upstream per-CDS
   design).
 ---

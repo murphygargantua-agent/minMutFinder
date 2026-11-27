@@ -1,0 +1,25 @@
+##fileformat=VCFv4.0
+##FILTER=<ID=PASS,Description="All filters passed">
+##fileDate=20261127
+##source=lofreq call --call-indels -f Synth01/assembly/ref_seq.fasta --no-default-filter -r UL97|NC_006273.2:1-66 -o /home/hermes-agent/.hermes/cache/scratch/lofreq2_call_parallelgd2gk0g3/0.vcf.gz Synth01/variant_calling/Synth01_indelqual_prot.bam 
+##reference=Synth01/assembly/ref_seq.fasta
+##INFO=<ID=DP,Number=1,Type=Integer,Description="Raw Depth">
+##INFO=<ID=AF,Number=1,Type=Float,Description="Allele Frequency">
+##INFO=<ID=SB,Number=1,Type=Integer,Description="Phred-scaled strand bias at this position">
+##INFO=<ID=DP4,Number=4,Type=Integer,Description="Counts for ref-forward bases, ref-reverse, alt-forward and alt-reverse bases">
+##INFO=<ID=INDEL,Number=0,Type=Flag,Description="Indicates that the variant is an INDEL.">
+##INFO=<ID=CONSVAR,Number=0,Type=Flag,Description="Indicates that the variant is a consensus variant (as opposed to a low frequency variant).">
+##INFO=<ID=HRUN,Number=1,Type=Integer,Description="Homopolymer length to the right of report indel position">
+##FILTER=<ID=min_snvqual_20,Description="Minimum SNV Quality (Phred) 20">
+##FILTER=<ID=min_indelqual_20,Description="Minimum Indel Quality (Phred) 20">
+##FILTER=<ID=min_snvqual_24,Description="Minimum SNV Quality (Phred) 24">
+##contig=<ID=UL97|NC_006273.2>
+##bcftools_concatVersion=1.24+htslib-1.24
+##bcftools_concatCommand=concat -a -O z -o /home/hermes-agent/.hermes/cache/scratch/lofreq2_call_parallelgd2gk0g3/concat.vcf.gz /home/hermes-agent/.hermes/cache/scratch/lofreq2_call_parallelgd2gk0g3/0.vcf.gz /home/hermes-agent/.hermes/cache/scratch/lofreq2_call_parallelgd2gk0g3/1.vcf.gz /home/hermes-agent/.hermes/cache/scratch/lofreq2_call_parallelgd2gk0g3/2.vcf.gz /home/hermes-agent/.hermes/cache/scratch/lofreq2_call_parallelgd2gk0g3/3.vcf.gz /home/hermes-agent/.hermes/cache/scratch/lofreq2_call_parallelgd2gk0g3/4.vcf.gz /home/hermes-agent/.hermes/cache/scratch/lofreq2_call_parallelgd2gk0g3/5.vcf.gz /home/hermes-agent/.hermes/cache/scratch/lofreq2_call_parallelgd2gk0g3/6.vcf.gz /home/hermes-agent/.hermes/cache/scratch/lofreq2_call_parallelgd2gk0g3/7.vcf.gz /home/hermes-agent/.hermes/cache/scratch/lofreq2_call_parallelgd2gk0g3/8.vcf.gz /home/hermes-agent/.hermes/cache/scratch/lofreq2_call_parallelgd2gk0g3/9.vcf.gz /home/hermes-agent/.hermes/cache/scratch/lofreq2_call_parallelgd2gk0g3/10.vcf.gz /home/hermes-agent/.hermes/cache/scratch/lofreq2_call_parallelgd2gk0g3/11.vcf.gz /home/hermes-agent/.hermes/cache/scratch/lofreq2_call_parallelgd2gk0g3/12.vcf.gz /home/hermes-agent/.hermes/cache/scratch/lofreq2_call_parallelgd2gk0g3/13.vcf.gz /home/hermes-agent/.hermes/cache/scratch/lofreq2_call_parallelgd2gk0g3/14.vcf.gz /home/hermes-agent/.hermes/cache/scratch/lofreq2_call_parallelgd2gk0g3/15.vcf.gz /home/hermes-agent/.hermes/cache/scratch/lofreq2_call_parallelgd2gk0g3/16.vcf.gz /home/hermes-agent/.hermes/cache/scratch/lofreq2_call_parallelgd2gk0g3/17.vcf.gz /home/hermes-agent/.hermes/cache/scratch/lofreq2_call_parallelgd2gk0g3/18.vcf.gz /home/hermes-agent/.hermes/cache/scratch/lofreq2_call_parallelgd2gk0g3/19.vcf.gz /home/hermes-agent/.hermes/cache/scratch/lofreq2_call_parallelgd2gk0g3/20.vcf.gz /home/hermes-agent/.hermes/cache/scratch/lofreq2_call_parallelgd2gk0g3/21.vcf.gz /home/hermes-agent/.hermes/cache/scratch/lofreq2_call_parallelgd2gk0g3/22.vcf.gz /home/hermes-agent/.hermes/cache/scratch/lofreq2_call_parallelgd2gk0g3/23.vcf.gz /home/hermes-agent/.hermes/cache/scratch/lofreq2_call_parallelgd2gk0g3/24.vcf.gz /home/hermes-agent/.hermes/cache/scratch/lofreq2_call_parallelgd2gk0g3/25.vcf.gz /home/hermes-agent/.hermes/cache/scratch/lofreq2_call_parallelgd2gk0g3/26.vcf.gz /home/hermes-agent/.hermes/cache/scratch/lofreq2_call_parallelgd2gk0g3/27.vcf.gz /home/hermes-agent/.hermes/cache/scratch/lofreq2_call_parallelgd2gk0g3/28.vcf.gz /home/hermes-agent/.hermes/cache/scratch/lofreq2_call_parallelgd2gk0g3/29.vcf.gz /home/hermes-agent/.hermes/cache/scratch/lofreq2_call_parallelgd2gk0g3/30.vcf.gz /home/hermes-agent/.hermes/cache/scratch/lofreq2_call_parallelgd2gk0g3/31.vcf.gz; Date=Fri Nov 27 14:10:52 2026
+##FILTER=<ID=min_dp_10,Description="Minimum Coverage 10">
+##FILTER=<ID=sb_fdr,Description="Strand-Bias Multiple Testing Correction: fdr corr. pvalue > 0.001000">
+##FILTER=<ID=min_snvqual_28,Description="Minimum SNV Quality (Phred) 28">
+##FILTER=<ID=min_indelqual_20,Description="Minimum Indel Quality (Phred) 20">
+#CHROM	POS	ID	REF	ALT	QUAL	FILTER	INFO
+UL97|NC_006273.2	461	.	C	G	49	PASS	DP=44;AF=0.045455;SB=3;DP4=20,22,2,0
+UL97|NC_006273.2	496	.	G	T	110	PASS	DP=38;AF=0.105263;SB=9;DP4=15,19,4,0

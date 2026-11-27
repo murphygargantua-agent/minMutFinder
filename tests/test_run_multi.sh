@@ -177,7 +177,7 @@ assert "diagnostics: stderr shown on failure" "3" "$(echo "$diag_out" | grep -c 
 assert "diagnostics: log status shown on failure" "1" "$(echo "$diag_out" | grep -c 'log file')"
 
 # ---- Test 11: by_protein.nf uses shell vars, not Nextflow vars ----
-# The byProteinAnalysis process loops over prot_names.txt and calls
+# The protein_analysis process loops over prot_names.txt and calls
 # by_protein_analysis.py for each CDS. Using ${prot} would be interpreted
 # as a Nextflow variable reference (which doesn't exist), causing a
 # compilation error. It must use $prot (shell variable) instead.

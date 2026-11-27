@@ -1,0 +1,4 @@
+sample_name,r1,r2
+Synth00,/home/hermes-agent/projects/bioinformatics/minmutfinder/minMutFinder-nf/synth_data/Synth00_R1.fq.gz,/home/hermes-agent/projects/bioinformatics/minmutfinder/minMutFinder-nf/synth_data/Synth00_R2.fq.gz
+Synth01,/home/hermes-agent/projects/bioinformatics/minmutfinder/minMutFinder-nf/synth_data/Synth01_R1.fq.gz,/home/hermes-agent/projects/bioinformatics/minmutfinder/minMutFinder-nf/synth_data/Synth01_R2.fq.gz
+Synth02,/home/hermes-agent/projects/bioinformatics/minmutfinder/minMutFinder-nf/synth_data/Synth02_R1.fq.gz,/home/hermes-agent/projects/bioinformatics/minmutfinder/minMutFinder-nf/synth_data/Synth02_R2.fq.gz

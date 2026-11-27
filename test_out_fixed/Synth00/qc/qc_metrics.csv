@@ -1,0 +1,10 @@
+sample,test,score
+Synth00,reads_total,0
+Synth00,reads_filt_qc,640
+Synth00,reads_filt_qc_paired,640
+Synth00,length_UL97|NC_006273.2,2124
+Synth00,n_percentage_UL97|NC_006273.2,4.94%
+Synth00,coverage_UL97|NC_006273.2,95.06%
+Synth00,median_UL97|NC_006273.2,48.0
+Synth00,Q1_UL97|NC_006273.2,40.0
+Synth00,Q3_UL97|NC_006273.2,54.0

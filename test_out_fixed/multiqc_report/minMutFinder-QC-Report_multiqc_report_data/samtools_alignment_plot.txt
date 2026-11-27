@@ -1,0 +1,4 @@
+Sample	Mapped (with MQ>0)
+Synth00_samtools_stats	640.0
+Synth01_samtools_stats	640.0
+Synth02_samtools_stats	640.0

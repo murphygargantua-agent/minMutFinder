@@ -1,0 +1,6 @@
+# id: minmutfinder_qc
+# plot_type: table
+# section_name: minMutFinder QC metrics
+# description: Read counts from the minMutFinder QC step
+sample,reads_total,reads_filt_qc,reads_filt_qc_paired,length_UL97|NC_006273.2,n_percentage_UL97|NC_006273.2,coverage_UL97|NC_006273.2,median_UL97|NC_006273.2,Q1_UL97|NC_006273.2,Q3_UL97|NC_006273.2
+Synth01,0,640,640,2124,6.12%,93.88%,48.0,42.0,54.0

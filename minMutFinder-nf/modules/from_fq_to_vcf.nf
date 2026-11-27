@@ -47,7 +47,7 @@ process trimmomatic_qc {
     // trimmomatic 0.41 (latest, released Aug 2025) -- the conda wrapper is a Python
     // script using f-strings, so python=3.11 must be pinned to avoid "SyntaxError"
     // before Java ever runs.
-    conda 'bioconda::trimmomatic=0.41 conda-forge::python=3.11'
+    conda 'bioconda::trimmomatic=0.41 conda-forge::python'
 
     input:
     path r1
@@ -76,11 +76,11 @@ process trimmomatic_qc {
     """
 }
 
-process mapping1 {
-    // minimap2 2.31 (latest) + samtools 1.25 -- used together for the initial map
-    // and the sort step, but kept in one env because they're both C tools with
-    // compatible dependencies.
-    conda 'bioconda::minimap2=2.31 bioconda::samtools=1.25'
+process map_to_reference {
+    // bwa-mem2 2.3 (latest, bioconda) + samtools 1.25 -- bwa-mem2 is the current
+    // generation of BWA and avoids the minimap2 segment-count assertion that
+    // crashes when reads span complex/multi-contig regions.
+    conda 'bioconda::bwa-mem2=2.3 bioconda::samtools=1.25'
 
     input:
     path r1
@@ -94,8 +94,8 @@ process mapping1 {
     file fqUPr2
 
     output:
-    file "${out_dir}/assembly/${out_dir.baseName}_reads-mapped_to_prot.sam"
-    file "${out_dir}/assembly/${out_dir.baseName}_reads-mapped_to_prot.bam"
+    tuple val(out_dir.baseName), path("${out_dir}/assembly/${out_dir.baseName}_reads-mapped_to_prot.sam")
+    tuple val(out_dir.baseName), path("${out_dir}/assembly/${out_dir.baseName}_reads-mapped_to_prot.bam")
 
     script:
     """
@@ -104,16 +104,18 @@ process mapping1 {
     ASSEMBLY=${out_dir}/assembly
     FQ_R1=${fqr1}
     FQ_R2=${fqr2}
-    echo -e "\nMINIMAP2\n->Mapping against \${ASSEMBLY}/ref_seq.fasta\n"
-    time (minimap2 -ax sr "\${ASSEMBLY}/ref_seq.fasta" \$FQ_R1 \$FQ_R2 > "\${ASSEMBLY}"/"\${SAMPLE}"_reads-mapped_to_prot.sam)
+    echo -e "\nBWA-MEM2\n->Indexing \${ASSEMBLY}/ref_seq.fasta\n"
+    time (bwa-mem2 index "\${ASSEMBLY}/ref_seq.fasta")
+    echo -e "\nBWA-MEM2\n->Mapping against \${ASSEMBLY}/ref_seq.fasta\n"
+    time (bwa-mem2 mem -t 64 "\${ASSEMBLY}/ref_seq.fasta" \$FQ_R1 \$FQ_R2 > "\${ASSEMBLY}"/"\${SAMPLE}"_reads-mapped_to_prot.sam)
     samtools view -bS "\${ASSEMBLY}"/"\${SAMPLE}"_reads-mapped_to_prot.sam | samtools sort - -o "\${ASSEMBLY}"/"\${SAMPLE}"_reads-mapped_to_prot.bam
     """
 }
 
-process lofreq_variant_calling {
-    // lofreq 2.1.5-16 (latest) + samtools 1.25 -- variant calling and the bam/sam
+process variant_calling {
+    // lofreq 2.1.5 (latest) + samtools (pulled in by lofreq's htslib constraint)
     // index/view steps. bcftools is a separate process so its env stays clean.
-    conda 'bioconda::lofreq=2.1.5-16 bioconda::samtools=1.25'
+    conda 'bioconda::lofreq=2.1.5'
 
     input:
     path out_dir
@@ -121,11 +123,11 @@ process lofreq_variant_calling {
     file bam
 
     output:
-    file "${out_dir}/variant_calling/${out_dir.baseName}_indelqual_prot.bam"
-    file "${out_dir}/variant_calling/${out_dir.baseName}_indelqual_prot.bam.bai"
-    file "${out_dir}/variant_calling/${out_dir.baseName}_prot_variants.vcf"
-    file "${out_dir}/variant_calling/${out_dir.baseName}_indelqual_prot.sam"
-    file "${out_dir}/variant_calling/samfile.sam"
+    tuple val(out_dir.baseName), path("${out_dir}/variant_calling/${out_dir.baseName}_indelqual_prot.bam")
+    tuple val(out_dir.baseName), path("${out_dir}/variant_calling/${out_dir.baseName}_indelqual_prot.bam.bai")
+    tuple val(out_dir.baseName), path("${out_dir}/variant_calling/${out_dir.baseName}_prot_variants.vcf")
+    tuple val(out_dir.baseName), path("${out_dir}/variant_calling/${out_dir.baseName}_indelqual_prot.sam")
+    tuple val(out_dir.baseName), path("${out_dir}/variant_calling/samfile.sam")
 
     script:
     """
@@ -139,9 +141,18 @@ process lofreq_variant_calling {
     # tomake lofreq work
     echo -e "\nLOFREQ\n->Variant Calling Step: Mutation detection\n"
 
+    # lofreq refuses to overwrite an existing output file; remove it first so
+    # re-runs (e.g. after a cache invalidation) succeed.
+    rm -f "\${VARIANT_CALLING}"/"\${SAMPLE}"_indelqual_prot.bam
+    rm -f "\${VARIANT_CALLING}"/"\${SAMPLE}"_indelqual_prot.bam.bai
+
     lofreq indelqual --dindel -f "\${ASSEMBLY}/ref_seq.fasta" -o "\${VARIANT_CALLING}"/"\${SAMPLE}"_indelqual_prot.bam "\$BAM2"
     INDELQUAL_BAM="\${VARIANT_CALLING}"/"\${SAMPLE}"_indelqual_prot.bam
     samtools index "\${INDELQUAL_BAM}"
+    # lofreq refuses to overwrite an existing output file; remove it first so
+    # re-runs (e.g. after a cache invalidation) succeed.
+    rm -f "\${VARIANT_CALLING}"/"\${SAMPLE}"_prot_variants.vcf
+
     # tomake lofreq work
     time (lofreq call-parallel --pp-threads 64 --call-indels -f "\${ASSEMBLY}/ref_seq.fasta" -o "\${VARIANT_CALLING}"/"\${SAMPLE}"_prot_variants.vcf "\${INDELQUAL_BAM}")
 
@@ -152,7 +163,7 @@ process lofreq_variant_calling {
     """
 }
 
-process bcftools_consensus {
+process consensus_building {
     // bcftools 1.25 (latest) -- consensus/AF filtering/bgzip/indexing. Kept apart
     // from lofreq so a bcftools env issue never breaks variant calling.
     conda 'bioconda::bcftools=1.25'
@@ -162,12 +173,12 @@ process bcftools_consensus {
     file prot_variants_vcf
 
     output:
-    file "${out_dir}/variant_calling/${out_dir.baseName}_prot_variants.vcf.gz"
-    file "${out_dir}/variant_calling/${out_dir.baseName}_prot_variants.vcf.gz.csi"
-    file "${out_dir}/variant_calling/${out_dir.baseName}_prot_variants_AF-0.05.vcf"
-    file "${out_dir}/variant_calling/${out_dir.baseName}_prot_variants_AF-0.05.vcf.gz"
-    file "${out_dir}/variant_calling/${out_dir.baseName}_prot_variants_AF-0.05.vcf.gz.csi"
-    file "${out_dir}/assembly/${out_dir.baseName}_prot_variants_AF-0.05.fasta"
+    tuple val(out_dir.baseName), path("${out_dir}/variant_calling/${out_dir.baseName}_prot_variants.vcf.gz")
+    tuple val(out_dir.baseName), path("${out_dir}/variant_calling/${out_dir.baseName}_prot_variants.vcf.gz.csi")
+    tuple val(out_dir.baseName), path("${out_dir}/variant_calling/${out_dir.baseName}_prot_variants_AF-0.05.vcf")
+    tuple val(out_dir.baseName), path("${out_dir}/variant_calling/${out_dir.baseName}_prot_variants_AF-0.05.vcf.gz")
+    tuple val(out_dir.baseName), path("${out_dir}/variant_calling/${out_dir.baseName}_prot_variants_AF-0.05.vcf.gz.csi")
+    tuple val(out_dir.baseName), path("${out_dir}/assembly/${out_dir.baseName}_prot_variants_AF-0.05.fasta")
 
     script:
     """
@@ -190,9 +201,9 @@ process bcftools_consensus {
     """
 }
 
-process mapping2 {
-    // minimap2 2.31 (latest) + samtools 1.25 -- mapping against the consensus.
-    conda 'bioconda::minimap2=2.31 bioconda::samtools=1.25'
+process map_to_consensus {
+    // bwa-mem2 2.3 (latest, bioconda) + samtools 1.25 -- mapping against the consensus.
+    conda 'bioconda::bwa-mem2=2.3 bioconda::samtools=1.25'
 
     input:
     path out_dir
@@ -221,7 +232,10 @@ process mapping2 {
     FASTQ=${out_dir}/fastq
     FREQ_CUTOFF=0.05
     FQ_R1="\${FASTQ}"/"\${SAMPLE}"_qc_R1.fastq.gz; FQ_R2="\${FASTQ}"/"\${SAMPLE}"_qc_R2.fastq.gz
-    time (minimap2 -ax sr "\${prot_variants_AF05_fasta}" \$FQ_R1 \$FQ_R2 > \${ASSEMBLY}/"\${SAMPLE}"_reads_mapped_consensus.sam)
+    echo -e "\nBWA-MEM2\n->Indexing ${prot_variants_AF05_fasta}\n"
+    time (bwa-mem2 index "${prot_variants_AF05_fasta}")
+    echo -e "\nBWA-MEM2\n->Mapping against consensus ${prot_variants_AF05_fasta}\n"
+    time (bwa-mem2 mem -t 64 "${prot_variants_AF05_fasta}" \$FQ_R1 \$FQ_R2 > \${ASSEMBLY}/"\${SAMPLE}"_reads_mapped_consensus.sam)
     samtools view -bS \${ASSEMBLY}/"\${SAMPLE}"_reads_mapped_consensus.sam | samtools sort - -o \${ASSEMBLY}/"\${SAMPLE}"_reads_mapped_consensus.bam
     """
 
@@ -229,7 +243,7 @@ process mapping2 {
 }
 
 
-process read_depth {
+process consensus_depth {
     // samtools 1.25 -- depth calculation only.
     conda 'bioconda::samtools=1.25'
 
@@ -256,8 +270,8 @@ process read_depth {
     """
 }
 
-process reads_qc_plot {
-    conda 'conda-forge::python=3.11 conda-forge::matplotlib=3.8 bioconda::pysam conda-forge::pandas conda-forge::seaborn conda-forge::biopython'
+process qc_metrics {
+    conda 'conda-forge::python conda-forge::matplotlib=3.8 bioconda::pysam conda-forge::pandas conda-forge::seaborn conda-forge::biopython'
 
     input:
     file r1
