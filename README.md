@@ -31,6 +31,31 @@
 
 Get a multi-sample run going in three steps:
 
+### Manifest mode (explicit r1/r2)
+
+```bash
+# 1. Clone the fork
+git clone https://github.com/murphygargantua-agent/minMutFinder.git
+cd minMutFinder
+
+# 2. Prepare a manifest CSV
+cat > samples.csv << 'EOF'
+sample_name,r1,r2
+SampleA,/path/to/SampleA_R1.fq.gz,/path/to/SampleA_R2.fq.gz
+SampleB,/path/to/SampleB_R1.fq.gz,/path/to/SampleB_R2.fq.gz
+EOF
+
+# 3. Run (uses the real pipeline by default; pass --pipeline to use the stub)
+nextflow run minMutFinder-nf/minMutFinder.nf \
+  --manifest samples.csv \
+  --ref_seq minMutFinder-nf/resources/cmv_cds.fasta \
+  --annotate mutations.tsv \
+  --syn_muts yes \
+  --out_path out/manifest-test
+```
+
+### Scan mode (auto-pair by name)
+
 ```bash
 # 1. Clone the fork
 git clone https://github.com/murphygargantua-agent/minMutFinder.git
@@ -43,27 +68,28 @@ cp /path/to/SampleA_R2.fq.gz samples/SampleA/
 cp /path/to/SampleB_R1.fq.gz samples/SampleB/
 cp /path/to/SampleB_R2.fq.gz samples/SampleB/
 
-# 3. Run (uses the real pipeline by default; pass --pipeline to use the stub)
-./minMutFinder-nf/run_multi.sh \
-  --sample_dir samples \
+# 3. Run — the pipeline pairs *_R1.* / *_R2.* automatically, no manifest needed
+nextflow run minMutFinder-nf/minMutFinder.nf \
+  --inputReads samples \
   --ref_seq minMutFinder-nf/resources/cmv_cds.fasta \
-  --annotate mutations.tsv \
-  --syn_muts yes \
-  --concurrency 2
+  --out_path out/scan-test
 ```
 
 Outputs:
-- `multi_run_output/<sample>/` — per-sample pipeline outputs + plots
-- `multi_run_output/all_mutations.csv` — merged mutations table
-- `multi_run_output/all_qc_metrics.csv` — merged QC table
+- `out/<sample>/` — per-sample pipeline outputs + plots
+- `out/all_mutations.csv` — merged mutations table
+- `out/all_qc_metrics.csv` — merged QC table
+- `out/multiqc_report/` — consolidated MultiQC HTML report
 
 To smoke-test the orchestration without installing bioinformatics tools, swap in the stub pipeline:
 
 ```bash
-./minMutFinder-nf/run_multi.sh \
-  --sample_dir samples --ref_seq minMutFinder-nf/resources/cmv_cds.fasta \
-  --pipeline minMutFinder-nf/minMutFinder_stub.nf --concurrency 2 --dry-run
+nextflow run minMutFinder-nf/minMutFinder.nf --manifest samples.csv --ref_seq minMutFinder-nf/resources/cmv_cds.fasta --pipeline minMutFinder-nf/minMutFinder_stub.nf
 ```
+
+> **Note**: `run_multi.sh` (the legacy bash orchestrator) is still supported for
+> single-sample runs launched in parallel, but the manifest/scan modes above run all
+> samples within one Nextflow invocation and are the recommended path.
 
 ## 🔍 Features
 
@@ -136,24 +162,54 @@ nextflow run minMutFinder-nf/minMutFinder.nf   --ref_seq minMutFinder-nf/resourc
 
 ### Multi-sample
 
-Run multiple samples at once with `run_multi.sh`, which reuses the tested
-single-sample pipeline in parallel (concurrency-limited) and merges per-sample
-results into master tables:
+Run multiple samples at once. Two mutually exclusive input modes:
+
+**1. Manifest mode** — a CSV with `sample_name`, `r1` and `r2`. Nextflow runs each
+sample in parallel within a single pipeline run and merges the per-sample results
+into master tables:
 
 ```bash
-./run_multi.sh \
-  --sample_dir <dir_with_one_subdir_per_sample> \
-  --ref_seq <reference.fasta> \
-  --annotate <mutations.tsv> \
+nextflow run minMutFinder-nf/minMutFinder.nf \
+  --manifest samples.csv \
+  --ref_seq minMutFinder-nf/resources/cmv_cds.fasta \
+  --annotate mutations.tsv \
   --syn_muts yes \
-  --concurrency 2
+  --out_path out/manifest-test
 ```
 
-Each sample subdirectory should contain a paired FASTQ set
-(`{sample}_R1.fq.gz` + `{sample}_R2.fq.gz`, or `r1.fq`/`r2.fq`).
-Per-sample outputs land in `<output_dir>/<sample>/`; merged tables
-`all_mutations.csv` and `all_qc_metrics.csv` are written to `<output_dir>`.
-Per-sample plots remain under each `<output_dir>/<sample>/plots/`.
+The manifest CSV (`samples.csv`) must have a header row and the columns:
+`sample_name`, `r1`, `r2`. Paths may be relative (resolved against the CWD) or
+absolute.
+
+```bash
+// samples.csv
+sample_name,r1,r2
+SampleA,/path/to/SampleA_R1.fq.gz,/path/to/SampleA_R2.fq.gz
+SampleB,/path/to/SampleB_R1.fq.gz,/path/to/SampleB_R2.fq.gz
+```
+
+**2. Scan mode** — point at a directory of paired FASTQ and let the pipeline auto-pair
+forward/reverse files by name (like `run_multi.sh`'s `find_pair`, or tpal's
+`Channel.fromFilePairs`). No manifest needed:
+
+```bash
+nextflow run minMutFinder-nf/minMutFinder.nf \
+  --inputReads samples \
+  --ref_seq minMutFinder-nf/resources/cmv_cds.fasta \
+  --out_path out/scan-test
+```
+
+Expect one subdirectory per sample, each containing `{sample}_R1.fq.gz` and
+`{sample}_R2.fq.gz`. The naming convention matches `run_multi.sh`'s `find_pair`:
+
+- `*_R1.*` + `*_R2.*` (any extension: `.fastq`, `.fq`, `.fq.gz`)
+- files may sit directly in `--inputReads` or one level down inside per-sample dirs
+
+Outputs are merged into `all_mutations.csv` and `all_qc_metrics.csv` under `--out_path`:
+
+A consolidated MultiQC QC report is generated under `<out_path>/multiqc_report/`:
+it merges the per-sample `qc/qc_metrics.csv` tables, `fastp` JSON logs and
+`bcftools stats` reports into one HTML report.
 
 ### MultiQC report
 
@@ -190,6 +246,21 @@ nextflow run minMutFinder-nf/minMutFinder.nf \
 The synthetic reads carry known SNVs at RL1 positions 683, 700, 806 and 882
 (e.g. `C683G`, `C700A`, `C806G`, `G882C`), which the pipeline detects at ~50-100%
 allele frequency, so they also validate variant calling against ground truth.
+
+### Smoke test: scan mode
+
+Copy the synthetic FASTQs into a directory and run with `--inputReads` — the
+pipeline auto-pairs them without a manifest:
+
+```bash
+mkdir -p out/synthetic-scan && cp minMutFinder-nf/resources/synthetic/*.fq out/synthetic-scan/
+nextflow run minMutFinder-nf/minMutFinder.nf \
+  --inputReads out/synthetic-scan \
+  --ref_seq minMutFinder-nf/resources/cmv_cds.fasta \
+  --out_path out/synthetic-scan-test
+```
+
+Expect `synth_R1.fq` + `synth_R2.fq` to be paired as sample `synth`.
 
 ### Custom FASTQ naming
 
@@ -255,8 +326,10 @@ This multi-CDS pipeline and multi-sample orchestration were validated end-to-end
 
 ## ⚙️ Arguments
 
-- `--ref_seq`: Path and filename of the reference genome FASTA file (1)(2)(4). Accepts relative or absolute paths.
+- `--ref_seq`: Path and filename of the reference genome FASTA file (1)(2). Accepts relative or absolute paths.
 - `--out_path`: Output name for the virus column. Accepts relative or absolute paths.
+- `--manifest`: Path to a manifest CSV with `sample_name`, `r1` and `r2` columns (multi-sample mode).
+- `--inputReads`: Path to a directory of paired FASTQ; the pipeline auto-pairs forward/reverse files by name (alternative multi-sample mode, mutually exclusive with `--manifest`).
 - `--r1`: Path and filename of the forward FASTQ compressed file. Accepts relative or absolute paths.
 - `--r2`: Path and filename of the reverse FASTQ compressed file. Accepts relative or absolute paths.
 - `--annotate`: Path and filename of the TSV file containing the annotated mutations (3). Accepts relative or absolute paths.

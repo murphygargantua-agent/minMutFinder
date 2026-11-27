@@ -186,6 +186,26 @@ prot_count=$(grep -F '${prot}' "$bp_nf" 2>/dev/null | wc -l || true)
 prot_count=${prot_count:-0}
 assert "by_protein.nf: no Nextflow var refs for shell loop vars" "0" "$prot_count"
 
+# ---- Test 12: Nextflow --inputReads scan mode auto-pairs R1/R2 ----
+# The pipeline's scan mode must pair *_R1.* / *_R2.* files automatically, both
+# when they sit directly in --inputReads and when they are one level down inside
+# per-sample dirs. Uses the stub pipeline so no bioinformatics tools are needed.
+PIPELINE="$(cd "$(dirname "$SCRIPT")" && pwd)/minMutFinder-nf/minMutFinder_stub.nf"
+mkdir -p "$TMP/scan/S1" "$TMP/scan/S2"
+echo "R1" > "$TMP/scan/S1/S1_R1.fq"
+echo "R2" > "$TMP/scan/S1/S1_R2.fq"
+echo "R1" > "$TMP/scan/S2/S2_R1.fq"
+echo "R2" > "$TMP/scan/S2/S2_R2.fq"
+rm -rf "$TMP/scanout"
+nextflow run "$PIPELINE" --inputReads "$TMP/scan" \
+  --ref_seq ref.fasta --out_path "$TMP/scanout" --log "$TMP/scan.log" \
+  --pipeline "$PIPELINE" 2>&1 >/dev/null
+for s in S1 S2; do
+  assert "scan mode: $s output dir created" "1" "$(test -d "$TMP/scanout/$s" && echo 1 || echo 0)"
+  assert "scan mode: $s mutations CSV created" "1" "$(test -f "$TMP/scanout/$s/mutations/${s}_mutations.csv" && echo 1 || echo 0)"
+  assert "scan mode: $s qc CSV created" "1" "$(test -f "$TMP/scanout/$s/qc/qc_metrics.csv" && echo 1 || echo 0)"
+done
+
 echo ""
 echo "=== Results: $PASS passed, $FAIL failed ==="
 if [[ $FAIL -gt 0 ]]; then exit 1; fi

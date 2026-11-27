@@ -10,6 +10,7 @@ set -euo pipefail
 out_path=""
 name=""
 log=""
+input_reads=""
 
 # Print version if requested
 if [[ "$1" == "version" ]]; then
@@ -23,38 +24,62 @@ while [[ $# -gt 0 ]]; do
     --name) name="$2"; shift 2 ;;
     --log) log="$2"; shift 2 ;;
     -log) log="$2"; shift 2 ;;
+    --inputReads) input_reads="$2"; shift 2 ;;
     *) shift ;;
   esac
 done
 
-mkdir -p "$out_path/fastq" "$out_path/assembly" "$out_path/variant_calling" \
-         "$out_path/mutations" "$out_path/plots" "$out_path/qc"
+# scan mode: one output dir per sample found in the input reads folder
+if [[ -n "$input_reads" ]]; then
+  for sample_dir in "$input_reads"/*/; do
+    sample=$(basename "$sample_dir")
+    mkdir -p "$out_path/$sample/fastq" "$out_path/$sample/assembly" \
+             "$out_path/$sample/variant_calling" "$out_path/$sample/mutations" \
+             "$out_path/$sample/plots" "$out_path/$sample/qc"
 
-SAMPLE=$(basename "$out_path")
+    cat > "$out_path/$sample/mutations/${sample}_mutations.csv" <<EOF
+SampleID,Gene,Mutation_type,Aa_change,Type_of_aa_change,Nt_mutation,Mutation_frequency
+${sample},UL1,missense,A,gain,A,1.0
+${sample},UL2,synonymous,S,loss,S,0.5
+EOF
 
-# per-sample mutations file (with header)
-cat > "$out_path/mutations/${SAMPLE}_mutations.csv" <<EOF
+    cat > "$out_path/$sample/qc/qc_metrics.csv" <<EOF
+sample,test,score
+${sample},qc_test,0.99
+EOF
+
+    touch "$out_path/$sample/mutations/stopper"
+  done
+else
+  mkdir -p "$out_path/fastq" "$out_path/assembly" "$out_path/variant_calling" \
+           "$out_path/mutations" "$out_path/plots" "$out_path/qc"
+
+  SAMPLE=$(basename "$out_path")
+
+  cat > "$out_path/mutations/${SAMPLE}_mutations.csv" <<EOF
 SampleID,Gene,Mutation_type,Aa_change,Type_of_aa_change,Nt_mutation,Mutation_frequency
 ${SAMPLE},UL1,missense,A,gain,A,1.0
 ${SAMPLE},UL2,synonymous,S,loss,S,0.5
 EOF
 
-# per-sample qc file (with header)
-cat > "$out_path/qc/qc_metrics.csv" <<EOF
+  cat > "$out_path/qc/qc_metrics.csv" <<EOF
 sample,test,score
 ${SAMPLE},qc_test,0.99
 EOF
 
-# depth file expected by byProteinAnalysis
-echo -e "ref\tpos\tdepth" > "$out_path/assembly/${SAMPLE}_depth.tsv"
+  echo -e "ref\tpos\tdepth" > "$out_path/assembly/${SAMPLE}_depth.tsv"
 
-# stopper file so waitForOutMuts merges per-CDS files into the sample file
-touch "$out_path/mutations/stopper"
+  touch "$out_path/mutations/stopper"
+fi
 
 # Write a Nextflow-style log with a completion marker so run_multi.sh can poll.
 {
   echo "[nextflow] Initializing..."
-  echo "[nextflow] Processing $SAMPLE..."
+  if [[ -n "$input_reads" ]]; then
+    echo "[nextflow] Processing scan mode samples..."
+  else
+    echo "[nextflow] Processing $SAMPLE..."
+  fi
   echo "[nextflow] Execution completed successfully"
 } > "$log"
 

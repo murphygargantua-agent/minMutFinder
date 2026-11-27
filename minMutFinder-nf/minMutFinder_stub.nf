@@ -59,27 +59,28 @@ workflow {
   def out_path = params.out_path
   def out_dir = file(out_path); out_dir.mkdirs()
 
-  // Manifest mode: one row per sample -> create the per-sample output structure.
-  if (params.manifest) {
-    Channel.fromPath(params.manifest)
+  // Scan mode: pair *_R1.* / *_R2.* FASTQ files by sample id, mirroring the
+  // real pipeline's --inputReads logic.
+  if (params.inputReads) {
+    def inputReads = new File(params.inputReads).getCanonicalPath()
+    ch_samples = Channel.fromPath("$inputReads/{*,*/*}_R{1,2}*.fq*")
+      .filter { file -> file.toString().matches(/.*_R[12]\..*/) }
+      .map { file -> [
+          file.getParent().toString() == inputReads ?
+            file.getName().replaceAll(/_R[12]\..*/, '') : // flat: prefix as sample id
+            file.getParent().getName(),                   // nested: dir name as sample id
+          file.toString()
+        ]
+      }
+      .groupTuple()
+      .map { name, files -> [name, files[0], files[1]] }
+
+    println "stub: scan mode with ${ch_samples.count()} sample(s)"
+  } else if (params.manifest) {
+    // Manifest mode: one row per sample -> create the per-sample output structure.
+    ch_samples = Channel.fromPath(params.manifest)
         .splitCsv(header: true, quote: '"')
         .map { row -> [row.sample_name, new File(row.r1).getCanonicalPath(), new File(row.r2).getCanonicalPath()] }
-        .set { ch_samples }
-
-    // Pre-create the per-sample output dirs and submit the file-writing process.
-    ch_samples.map { name, r1, r2 ->
-      def sample_dir = file("$out_path/$name"); sample_dir.mkdirs()
-      ["fastq","assembly","variant_calling","mutations","plots","qc"].each { subdir ->
-        file("$sample_dir/$subdir").mkdirs()
-      }
-      sample_dir
-    }.set { ch_out_dirs }
-
-    def ch_ref_seqs = ch_samples.map { name, r1, r2 -> params.ref_seq }
-    def ch_qc_csvs = ch_samples.map { name, r1, r2 -> "$out_path/$name/qc/qc_metrics.csv" }
-    def ch_muts_csvs = ch_samples.map { name, r1, r2 -> "$out_path/$name/mutations/${name}_mutations.csv" }
-
-    writeSampleFiles(ch_out_dirs, ch_ref_seqs, ch_qc_csvs, ch_muts_csvs, ch_samples.map { name, r1, r2 -> name })
 
     println "stub: manifest mode with ${ch_samples.count()} sample(s)"
   } else {
@@ -87,17 +88,24 @@ workflow {
     // per-sample naming behaviour (out_path.baseName) is preserved.
     def r1 = params.r1 && !params.r1.equals(false) ? new File(params.r1).getCanonicalPath() : null
     def r2 = params.r2 && !params.r2.equals(false) ? new File(params.r2).getCanonicalPath() : null
-    Channel.of([null, r1, r2]).set { ch_samples }
-
     def SAMPLE = new File(out_path).getName()
-    ["fastq","assembly","variant_calling","mutations","plots","qc"].each { subdir ->
-      file("$out_path/$subdir").mkdirs()
-    }
-    // single sample: out_dir is the user-supplied out_path
-    writeSampleFiles(
-      file(out_path), params.ref_seq, "$out_path/qc/qc_metrics.csv",
-      "$out_path/mutations/${SAMPLE}_mutations.csv", SAMPLE)
+    Channel.of([SAMPLE, r1, r2]).set { ch_samples }
   }
+
+  // Pre-create the per-sample output dirs and submit the file-writing process.
+  ch_samples.map { name, r1, r2 ->
+    def sample_dir = file("$out_path/$name"); sample_dir.mkdirs()
+    ["fastq","assembly","variant_calling","mutations","plots","qc"].each { subdir ->
+      file("$sample_dir/$subdir").mkdirs()
+    }
+    sample_dir
+  }.set { ch_out_dirs }
+
+  def ch_ref_seqs = ch_samples.map { name, r1, r2 -> params.ref_seq }
+  def ch_qc_csvs = ch_samples.map { name, r1, r2 -> "$out_path/$name/qc/qc_metrics.csv" }
+  def ch_muts_csvs = ch_samples.map { name, r1, r2 -> "$out_path/$name/mutations/${name}_mutations.csv" }
+
+  writeSampleFiles(ch_out_dirs, ch_ref_seqs, ch_qc_csvs, ch_muts_csvs, ch_samples.map { name, r1, r2 -> name })
 
   if (params.syn_muts == "yes") {
     println "stub: syn_muts=yes (would append UL3 mutation)"

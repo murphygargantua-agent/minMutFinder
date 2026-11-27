@@ -98,9 +98,9 @@ plot (default is "no") (4)
 
 ### Multi-sample
 
-Run multiple samples at once with a **manifest CSV**: one row per sample with the columns
-`sample_name`, `r1` and `r2`. Nextflow runs each sample in parallel within a single pipeline
-run and merges the per-sample results into master tables.
+Run multiple samples at once. Two mutually exclusive input modes:
+
+**1. Manifest mode** — a CSV with `sample_name`, `r1` and `r2`:
 
 ```bash
 nextflow run minMutFinder.nf \
@@ -114,8 +114,6 @@ nextflow run minMutFinder.nf \
 The manifest CSV (`samples.csv`) must have a header row and the columns:
 `sample_name`, `r1`, `r2`. Paths may be relative (resolved against the CWD) or absolute.
 
-Outputs are merged into `all_mutations.csv` and `all_qc_metrics.csv` under `--out_path`:
-
 ```bash
 // samples.csv
 sample_name,r1,r2
@@ -123,6 +121,28 @@ SampleA,/path/to/SampleA_R1.fq.gz,/path/to/SampleA_R2.fq.gz
 SampleB,/path/to/SampleB_R1.fq.gz,/path/to/SampleB_R2.fq.gz
 ```
 
+**2. Scan mode** — point at a directory of paired FASTQ and let the pipeline auto-pair
+forward/reverse files by name (like `run_multi.sh`'s `find_pair`, or tpal's
+`Channel.fromFilePairs`). No manifest needed:
+
+```bash
+nextflow run minMutFinder.nf \
+  --inputReads /path/to/samples/ \
+  --ref_seq <ref.fa> \
+  --out_path <output_dir>
+```
+
+Expect one subdirectory per sample, each containing `{sample}_R1.fq.gz` and
+`{sample}_R2.fq.gz`. The naming convention is the same as `run_multi.sh`'s
+`find_pair` step:
+
+- `*_R1.*` + `*_R2.*` (any extension: `.fastq`, `.fq`, `.fq.gz`)
+- `r1*`/`r2*` or `R1*`/`R2*` as a fallback
+- files may sit directly in `--inputReads` or one level down inside per-sample dirs
+
+Outputs are merged into `all_mutations.csv` and `all_qc_metrics.csv` under `--out_path`:
+
+```bash
 Per-sample outputs land in `<out_path>/<sample_name>/`; merged tables
 `all_mutations.csv` and `all_qc_metrics.csv` are written to `<out_path>`.
 
@@ -277,14 +297,36 @@ Beginning of analysis:
     def annotate = params.annotate ? new File(params.annotate).getCanonicalPath() : null
 
     // ---------------------------------------------------------------------------
-    // Sample input: manifest CSV (sample_name, r1, r2) OR legacy --r1/--r2 single sample.
+    // Sample input: two mutually exclusive modes.
+    //   1. Manifest mode  --manifest samples.csv  → CSV with explicit r1/r2 paths
+    //   2. Scan mode    --inputReads <dir>        → auto-pair *_R1.* / *_R2.* FASTQ
+    // Falls back to the legacy single-sample --r1/--r2 when neither is given.
     // ---------------------------------------------------------------------------
     if (params.manifest) {
-        // Read the CSV manifest; each row becomes a [sample_name, r1, r2] tuple of
+        // Manifest mode: read the CSV; each row becomes a [sample_name, r1, r2] tuple of
         // canonical paths so scripts in isolated work dirs can always find the files.
         def manifestChannel = Channel.fromPath(params.manifest).splitCsv(header: true, quote: '"')
             .map { row -> [row.sample_name, new File(row.r1).getCanonicalPath(), new File(row.r2).getCanonicalPath()] }
         manifestChannel.set { ch_samples }
+    } else if (params.inputReads) {
+        // Scan mode: pair *_R1.* / *_R2.* FASTQ files by sample id.
+        // Brace expansion {*,*/*} finds files directly in --inputReads or one level
+        // down inside per-sample dirs (e.g. samples/S1/synth_R1.fq).
+        // Sample id is the filename prefix (flat) or the parent dir name (nested),
+        // so R1/R2 files of the same sample are grouped together.
+        def inputReads = new File(params.inputReads).getCanonicalPath()
+        def inputRawReads = Channel.fromPath("$inputReads/{*,*/*}_R{1,2}*.fq*")
+            .filter { file -> file.toString().matches(/.*_R[12]\..*/) }
+            .map { file -> [
+                file.getParent().toString() == inputReads ?
+                    file.getName().replaceAll(/_R[12]\..*/, '') : // flat: prefix as sample id
+                    file.getParent().getName(),                   // nested: dir name as sample id
+                file.toString()
+              ]
+            }
+            .groupTuple()
+            .map { name, files -> [name, files[0], files[1]] }
+        inputRawReads.set { ch_samples }
     } else {
         // Legacy single-sample mode: out_dir is the user-supplied out_path so the
         // per-sample naming behaviour (out_path.baseName) is preserved.
