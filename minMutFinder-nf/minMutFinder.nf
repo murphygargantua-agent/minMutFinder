@@ -18,7 +18,7 @@
 // Copyright (C) 2024 Respiratory Viruses Unit, Microbiology Department, Vall d’Hebron Hospital Universitari, Vall d’Hebron Institut de Recerca (VHIR), Vall d’Hebron Barcelona Hospital Campus, Passeig Vall d’Hebron 119-129, 08035 Barcelona, Spain
 
 include { dirCreator; refCheck } from './modules/initialization'
-include { fastqProcessing; mapping1; variant_calling; read_depth; mapping2; reads_qc_plot } from './modules/from_fq_to_vcf'
+include { ref_faidx; trimmomatic_qc; mapping1; lofreq_variant_calling; bcftools_consensus; read_depth; mapping2; reads_qc_plot } from './modules/from_fq_to_vcf'
 include { byProteinAnalysis; protNames } from './modules/by_protein'
 include { waitForOutMuts; vizNoAnnot; annotateAndViz } from './modules/viz_and_annotate'
 include { runMultiQC } from './modules/multiqc'
@@ -431,15 +431,22 @@ Beginning of analysis:
     // Per-sample pipeline chain. Nextflow fans out each process once per sample
     // (one DAG instance per channel element), then joins the channels again.
     // ---------------------------------------------------------------------------
-    def (rfasta, rfasta_fai, qR1, qR2, qR1u, qR2u) = fastqProcessing(ch_r1, ch_r2, ch_ref_seq, ch_out_dir)
+    // Reference indexing (samtools env) and trimmomatic QC (python/trimmomatic env) are
+    // now separate processes: a failure in one env never breaks the other.
+    def (rfasta, rfasta_fai) = ref_faidx(ch_ref_seq, ch_out_dir)
+
+    def (qR1, qR2, qR1u, qR2u) = trimmomatic_qc(ch_r1, ch_r2, ch_out_dir)
 
     reads_qc_plot(ch_r1, ch_r2, ch_out_dir, ch_ref_seq, rfasta_fai, qR1, qR2, qR1u, qR2u)
 
     def (map_sam, map_bam) = mapping1(ch_r1, ch_r2, ch_ref_seq, ch_out_dir, rfasta_fai, qR1, qR2, qR1u, qR2u)
 
-    def (v_bam, v_bam_bai, v_vcf, v_sam, v_samfile,
-         v_vcf_gz, v_vcf_gz_csi, v_af05_vcf, v_af05_vcf_gz, v_af05_vcf_gz_csi, v_af05_fasta) = variant_calling(
+    // lofreq does variant calling (bam/sam/vcf); bcftools does consensus/AF filtering.
+    def (v_bam, v_bam_bai, v_vcf, v_sam, v_samfile) = lofreq_variant_calling(
         ch_out_dir, map_sam, map_bam)
+
+    def (v_vcf_gz, v_vcf_gz_csi, v_af05_vcf, v_af05_vcf_gz, v_af05_vcf_gz_csi, v_af05_fasta) = bcftools_consensus(
+        ch_out_dir, v_vcf)
 
     def (cons_sam, cons_bam) = mapping2(
         ch_out_dir, v_bam, v_bam_bai, v_vcf, v_sam, v_samfile, v_vcf_gz, v_vcf_gz_csi,
