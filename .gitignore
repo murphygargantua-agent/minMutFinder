@@ -7,7 +7,10 @@ synth_data/
 test_out_fixed/
 work_e2e/
 work/
-.nextflow.log
+
+# Nextflow runtime
+.nextflow.log*
+.nextflow/
 *.log
 
 # Python/conda
